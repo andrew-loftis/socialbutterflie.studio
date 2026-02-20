@@ -8,6 +8,7 @@ import {
   useState,
 } from 'react';
 import {
+  createUserWithEmailAndPassword,
   GoogleAuthProvider,
   User,
   onAuthStateChanged,
@@ -22,6 +23,7 @@ type AuthState = {
   loading: boolean;
   token: string | null;
   signInEmail: (email: string, password: string) => Promise<void>;
+  signUpEmail: (email: string, password: string) => Promise<void>;
   signInGoogle: () => Promise<void>;
   logout: () => Promise<void>;
 };
@@ -51,6 +53,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       signInEmail: async (email: string, password: string) => {
         if (!firebaseAuth) throw new Error('Firebase Auth is not configured');
         await signInWithEmailAndPassword(firebaseAuth, email, password);
+      },
+      signUpEmail: async (email: string, password: string) => {
+        if (!firebaseAuth) throw new Error('Firebase Auth is not configured');
+        await createUserWithEmailAndPassword(firebaseAuth, email, password);
       },
       signInGoogle: async () => {
         if (!firebaseAuth) throw new Error('Firebase Auth is not configured');
