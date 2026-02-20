@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="en" class="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Social Butterflie — Settings</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="./theme.css" />
+    <script>
+      // Apply theme immediately to prevent flash
+      (function() {
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        if (savedTheme === 'dark') {
+          document.documentElement.classList.add('dark-mode');
+          document.body.classList.add('dark-mode');
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <div class="app-layout">
+      <aside class="nav-rail">
+        <a href="./index.html" class="nav-brand">
+          <svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+            <path d="M16 16 Q10 10, 5 12 Q3 13, 3 15 Q3 17, 5 18 Q10 20, 16 16" />
+            <path d="M16 16 Q22 10, 27 12 Q29 13, 29 15 Q29 17, 27 18 Q22 20, 16 16" />
+            <path d="M16 17 Q12 20, 8 22 Q6 23, 6 25 Q6 26, 7 27 Q11 28, 16 24" />
+            <path d="M16 17 Q20 20, 24 22 Q26 23, 26 25 Q26 26, 25 27 Q21 28, 16 24" />
+            <line x1="16" y1="6" x2="16" y2="28" />
+            <circle cx="16" cy="6" r="1.5" />
+          </svg>
+        </a>
+        <div class="nav-group">
+          <a href="./calendar.html" class="nav-item" aria-label="Calendar">
+            <i class="fa-solid fa-calendar-days"></i>
+          </a>
+          <a href="./build.html" class="nav-item" aria-label="Build Post">
+            <i class="fa-solid fa-plus-circle"></i>
+          </a>
+          <a href="./analytics.html" class="nav-item" aria-label="Analytics">
+            <i class="fa-solid fa-chart-line"></i>
+          </a>
+          <a href="./storage.html" class="nav-item" aria-label="Storage">
+            <i class="fa-solid fa-cloud"></i>
+          </a>
+          <a href="./settings.html" class="nav-item active" aria-label="Settings">
+            <i class="fa-solid fa-gear"></i>
+          </a>
+        </div>
+        <a href="./profile.html" class="nav-avatar" aria-label="Profile">
+          <i class="fa-solid fa-user"></i>
+        </a>
+      </aside>
+
+      <div class="main-surface">
+        <header class="top-bar glass-panel">
+          <div>
+            <h1>Workspace Settings</h1>
+            <p>Calibrate AI tone, defaults, and connections inside a refined glass UI.</p>
+          </div>
+          <a class="btn btn-secondary" href="./index.html"><i class="fa-solid fa-arrow-left"></i><span>Back to dashboard</span></a>
+        </header>
+
+        <div class="space-y-8 mt-8">
+          <section class="glass-panel p-6 space-y-5">
+            <div>
+              <h2 class="text-lg font-semibold">Appearance</h2>
+              <p class="panel-subtitle">Customize how the app looks and feels.</p>
+            </div>
+            <div class="form-grid">
+              <div>
+                <label class="label">Theme Mode</label>
+                <div class="theme-toggle-container">
+                  <button class="theme-mode-btn" id="lightModeBtn" data-theme="light">
+                    <i class="fa-solid fa-sun"></i>
+                    <span>Light</span>
+                  </button>
+                  <button class="theme-mode-btn active" id="darkModeBtn" data-theme="dark">
+                    <i class="fa-solid fa-moon"></i>
+                    <span>Dark</span>
+                  </button>
+                </div>
+                <p class="text-xs text-muted mt-2">Choose between light and dark theme.</p>
+              </div>
+            </div>
+          </section>
+
+          <section class="glass-panel p-6 space-y-5">
+            <div>
+              <h2 class="text-lg font-semibold">AI Preferences</h2>
+              <p class="panel-subtitle">Tune the assistant to speak in your brand voice and seed default hashtags.</p>
+            </div>
+            <form id="aiForm" class="form-grid">
+              <div>
+                <label class="label" for="brandVoice">Brand voice description</label>
+                <textarea id="brandVoice" class="glass-input" rows="3" placeholder="Describe your voice, tone, and brand…"></textarea>
+              </div>
+              <div>
+                <label class="label" for="defaultHashtags">Default hashtags</label>
+                <input id="defaultHashtags" class="glass-input" placeholder="#architecture #render #barndominium" />
+              </div>
+              <div class="footer-actions">
+                <button class="btn btn-primary" type="submit"><i class="fa-solid fa-floppy-disk"></i><span>Save changes</span></button>
+              </div>
+            </form>
+          </section>
+
+          <section class="glass-panel p-6 space-y-5" id="settingsConnections">
+            <div class="panel-header">
+              <h2>Accounts</h2>
+            </div>
+            <div id="connectionsListSettings" class="space-y-4 text-sm"></div>
+          </section>
+        </div>
+      </div>
+    </div>
+
+    <script type="module">
+      import { apiGet, apiPost } from '/js/api.js';
+
+      function renderConnectionsPanel(conns) {
+        const list = document.getElementById('connectionsListSettings');
+        if (!list) return;
+        const providers = [
+          { key: 'facebook', label: 'Facebook + IG', icon: 'fa-facebook' },
+          { key: 'youtube', label: 'YouTube', icon: 'fa-youtube' },
+          { key: 'tiktok', label: 'TikTok', icon: 'fa-tiktok' }
+        ];
+        const connected = new Map();
+        (conns||[]).forEach(c => connected.set(c.provider, c));
+        list.innerHTML = providers.map(p => {
+          const active = connected.has(p.key);
+          const status = active ? '<span class="badge" style="background:rgba(34,197,94,0.25);border:1px solid rgba(34,197,94,0.4);color:#bbf7d0">Connected</span>' : '<span class="badge" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:var(--text-muted)">Not linked</span>';
+          const actionBtn = active ? `<button class=\"btn btn-ghost\" data-disconnect=\"${p.key}\"><i class=\"fa-solid fa-link-slash\"></i><span>Disconnect</span></button>` : `<button class=\"btn btn-secondary\" data-connect=\"${p.key}\"><i class=\"fa-brands ${p.icon}\"></i><span>Link ${p.label}</span></button>`;
+          return `
+            <div class=\"caption-card\" data-provider-card=\"${p.key}\">
+              <div class=\"flex items-center justify-between gap-3\">
+                <div class=\"text-sm font-medium flex items-center gap-2\"><i class=\"fa-brands ${p.icon}\"></i><span>${p.label}</span></div>
+                ${status}
+              </div>
+              <footer>${actionBtn}</footer>
+            </div>
+          `;
+        }).join('');
+        list.querySelectorAll('[data-connect]').forEach(btn => btn.addEventListener('click', () => connect(btn.getAttribute('data-connect'))));
+        list.querySelectorAll('[data-disconnect]').forEach(btn => btn.addEventListener('click', async () => {
+          if (!confirm('Disconnect this account?')) return;
+          await apiPost('/disconnect', { provider: btn.getAttribute('data-disconnect') });
+          const refreshed = await apiGet('/connections');
+          renderConnectionsPanel(refreshed);
+        }));
+      }
+
+      // Theme Toggle
+      function initThemeToggle() {
+        const lightBtn = document.getElementById('lightModeBtn');
+        const darkBtn = document.getElementById('darkModeBtn');
+        const body = document.body;
+        
+        // Check for saved theme preference or default to light mode
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        
+        function setTheme(theme) {
+          if (theme === 'dark') {
+            body.classList.add('dark-mode');
+            darkBtn.classList.add('active');
+            lightBtn.classList.remove('active');
+          } else {
+            body.classList.remove('dark-mode');
+            lightBtn.classList.add('active');
+            darkBtn.classList.remove('active');
+          }
+          localStorage.setItem('theme', theme);
+        }
+        
+        // Set initial theme
+        setTheme(savedTheme);
+        
+        // Add click handlers
+        lightBtn.addEventListener('click', () => setTheme('light'));
+        darkBtn.addEventListener('click', () => setTheme('dark'));
+      }
+
+      async function load() {
+        const prefs = await apiGet('/prefs');
+        document.getElementById('brandVoice').value = prefs.brandVoice || '';
+        document.getElementById('defaultHashtags').value = (prefs.defaultHashtags || []).join(' ');
+
+        const conns = await apiGet('/connections');
+        renderConnectionsPanel(conns);
+        
+        initThemeToggle();
+      }
+
+      window.addEventListener('connections:refresh', async () => {
+        try { const conns = await apiGet('/connections'); renderConnectionsPanel(conns); } catch(e) {}
+      });
+
+      document.getElementById('aiForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        await apiPost('/prefs', {
+          brandVoice: document.getElementById('brandVoice').value,
+          defaultHashtags: document.getElementById('defaultHashtags').value.split(/\s+/).filter(Boolean)
+        });
+        alert('Saved');
+      });
+
+      load();
+    </script>
+
+    <!-- Mobile Bottom Navigation -->
+    <nav class="mobile-nav">
+      <a href="./index.html" class="nav-brand">
+        <svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+          <path d="M16 16 Q10 10, 5 12 Q3 13, 3 15 Q3 17, 5 18 Q10 20, 16 16" />
+          <path d="M16 16 Q22 10, 27 12 Q29 13, 29 15 Q29 17, 27 18 Q22 20, 16 16" />
+          <path d="M16 17 Q12 20, 8 22 Q6 23, 6 25 Q6 26, 7 27 Q11 28, 16 24" />
+          <path d="M16 17 Q20 20, 24 22 Q26 23, 26 25 Q26 26, 25 27 Q21 28, 16 24" />
+          <line x1="16" y1="6" x2="16" y2="28" />
+          <circle cx="16" cy="6" r="1.5" />
+        </svg>
+      </a>
+      <div class="nav-group">
+        <a href="./calendar.html" class="nav-item" aria-label="Calendar"><i class="fa-solid fa-calendar-days"></i></a>
+        <a href="./build.html" class="nav-item" aria-label="Build Post"><i class="fa-solid fa-plus-circle"></i></a>
+        <a href="./analytics.html" class="nav-item" aria-label="Analytics"><i class="fa-solid fa-chart-line"></i></a>
+        <a href="./storage.html" class="nav-item" aria-label="Storage"><i class="fa-solid fa-cloud"></i></a>
+        <a href="./settings.html" class="nav-item active" aria-label="Settings"><i class="fa-solid fa-gear"></i></a>
+      </div>
+      <a href="./profile.html" class="nav-avatar" aria-label="Profile"><i class="fa-solid fa-user"></i></a>
+    </nav>
+  </body>
+</html>

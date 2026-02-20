@@ -1,0 +1,353 @@
+<!doctype html>
+<html lang="en" class="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Social Butterflie — Profile</title>
+    <link rel="icon" href="./favicon.ico" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="./theme.css" />
+    <script>
+      // Apply theme immediately to prevent flash
+      (function() {
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        if (savedTheme === 'dark') {
+          document.documentElement.classList.add('dark-mode');
+          document.body.classList.add('dark-mode');
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <div class="app-layout">
+      <aside class="nav-rail">
+        <div class="nav-brand">SB</div>
+        <nav class="nav-group" aria-label="Primary">
+          <a href="./index.html" class="nav-item" aria-label="Scheduler"><i class="fa-solid fa-calendar-days"></i></a>
+          <a href="./analytics.html" class="nav-item" aria-label="Analytics"><i class="fa-solid fa-square-poll-vertical"></i></a>
+          <a href="./settings.html" class="nav-item" aria-label="Settings"><i class="fa-solid fa-sliders"></i></a>
+        </nav>
+        <a href="./profile.html" class="nav-avatar active" title="Profile"><i class="fa-regular fa-circle-user"></i></a>
+      </aside>
+
+      <div class="main-surface">
+        <header class="top-bar glass-panel">
+          <div>
+            <h1>Profile & Workspace</h1>
+            <p>Manage connected networks and AI defaults. Personal auth coming soon.</p>
+          </div>
+          <a class="btn btn-secondary" href="./index.html"><i class="fa-solid fa-arrow-left"></i><span>Back</span></a>
+        </header>
+
+        <div class="space-y-8 mt-8">
+          <section class="glass-panel p-6 space-y-5" id="accountGroupsSection">
+            <div class="flex items-start justify-between gap-4 flex-wrap">
+              <div>
+                <h2 class="text-lg font-semibold">Account Groups</h2>
+                <p class="panel-subtitle">Organize social accounts by company, client, or personal brand.</p>
+              </div>
+              <button id="newGroupBtn" class="btn btn-primary text-sm"><i class="fa-solid fa-plus"></i><span>New Group</span></button>
+            </div>
+            <div id="accountGroupsList" class="space-y-4"></div>
+          </section>
+
+          <!-- Modal for creating new account group -->
+          <div id="newGroupModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" style="display: none;">
+            <div class="glass-panel p-6 max-w-md w-full mx-4">
+              <h3 class="text-lg font-semibold mb-4">Create Account Group</h3>
+              <form id="newGroupForm" class="space-y-4">
+                <div>
+                  <label class="label" for="groupName">Group Name</label>
+                  <input id="groupName" class="glass-input" placeholder="e.g., My Company, Client XYZ, Personal Brand" required />
+                </div>
+                <div>
+                  <label class="label" for="groupType">Type</label>
+                  <select id="groupType" class="glass-input">
+                    <option value="company">Company</option>
+                    <option value="personal">Personal</option>
+                  </select>
+                </div>
+                <div class="flex items-center gap-3 justify-end">
+                  <button type="button" id="cancelGroupBtn" class="btn btn-ghost">Cancel</button>
+                  <button type="submit" class="btn btn-primary"><i class="fa-solid fa-check"></i><span>Create</span></button>
+                </div>
+              </form>
+            </div>
+          </div>
+
+          <!-- Modal for adding account to a group -->
+          <div id="addAccountModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" style="display: none;">
+            <div class="glass-panel p-6 max-w-md w-full mx-4">
+              <h3 class="text-lg font-semibold mb-4">Add Social Account</h3>
+              <form id="addAccountForm" class="space-y-4">
+                <input type="hidden" id="targetGroupId" />
+                <div>
+                  <label class="label" for="accountProvider">Platform</label>
+                  <select id="accountProvider" class="glass-input">
+                    <option value="facebook">Facebook + Instagram</option>
+                    <option value="youtube">YouTube</option>
+                    <option value="tiktok">TikTok</option>
+                  </select>
+                </div>
+                <div class="flex items-center gap-3 justify-end">
+                  <button type="button" id="cancelAccountBtn" class="btn btn-ghost">Cancel</button>
+                  <button type="submit" class="btn btn-primary"><i class="fa-solid fa-link"></i><span>Connect</span></button>
+                </div>
+              </form>
+            </div>
+          </div>
+
+          <!-- Modal for editing brand voice -->
+          <div id="brandVoiceModal" class="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-sm" style="display: none;">
+            <div class="min-h-screen px-4 flex items-center justify-center py-8">
+              <div class="glass-panel p-6 max-w-3xl w-full">
+                <div class="flex items-center justify-between mb-6">
+                  <div>
+                    <h3 class="text-xl font-semibold">Brand Voice & Content Strategy</h3>
+                    <p class="text-sm text-slate-400 mt-1">Customize AI-generated content for <span id="bvGroupName" class="font-medium text-slate-200"></span></p>
+                  </div>
+                  <button type="button" id="closeBrandVoiceBtn" class="btn btn-ghost"><i class="fa-solid fa-times"></i></button>
+                </div>
+                
+                <form id="brandVoiceForm" class="space-y-6">
+                  <input type="hidden" id="bvGroupId" />
+                  
+                  <!-- Business Info -->
+                  <div class="space-y-4">
+                    <h4 class="text-sm font-semibold uppercase tracking-wide text-slate-300 border-b border-white/10 pb-2">Business Identity</h4>
+                    <div class="grid md:grid-cols-2 gap-4">
+                      <div>
+                        <label class="label" for="bvIndustry">Industry / Niche</label>
+                        <input id="bvIndustry" class="glass-input text-sm" placeholder="e.g., Architecture, Fashion, Tech, Fitness" />
+                      </div>
+                      <div>
+                        <label class="label" for="bvTargetAudience">Target Audience</label>
+                        <input id="bvTargetAudience" class="glass-input text-sm" placeholder="e.g., Homeowners 30-50, Gen Z creatives" />
+                      </div>
+                    </div>
+                    <div>
+                      <label class="label" for="bvBusinessDescription">What do you do?</label>
+                      <textarea id="bvBusinessDescription" class="glass-input text-sm" rows="2" placeholder="Describe your business, products, or services..."></textarea>
+                    </div>
+                    <div>
+                      <label class="label" for="bvUniqueValue">Unique Value Proposition</label>
+                      <textarea id="bvUniqueValue" class="glass-input text-sm" rows="2" placeholder="What makes you different from competitors?"></textarea>
+                    </div>
+                  </div>
+
+                  <!-- Tone & Voice -->
+                  <div class="space-y-4">
+                    <h4 class="text-sm font-semibold uppercase tracking-wide text-slate-300 border-b border-white/10 pb-2">Tone & Voice</h4>
+                    <div class="grid md:grid-cols-3 gap-4">
+                      <div>
+                        <label class="label" for="bvTone">Overall Tone</label>
+                        <select id="bvTone" class="glass-input text-sm">
+                          <option value="">Select...</option>
+                          <option value="professional">Professional</option>
+                          <option value="casual">Casual & Friendly</option>
+                          <option value="inspirational">Inspirational</option>
+                          <option value="humorous">Humorous & Playful</option>
+                          <option value="educational">Educational</option>
+                          <option value="luxurious">Luxurious & Premium</option>
+                          <option value="authentic">Authentic & Raw</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label class="label" for="bvEmotion">Emotional Vibe</label>
+                        <select id="bvEmotion" class="glass-input text-sm">
+                          <option value="">Select...</option>
+                          <option value="excited">Excited & Energetic</option>
+                          <option value="calm">Calm & Serene</option>
+                          <option value="confident">Confident & Bold</option>
+                          <option value="empathetic">Warm & Empathetic</option>
+                          <option value="aspirational">Aspirational</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label class="label" for="bvPerspective">Perspective</label>
+                        <select id="bvPerspective" class="glass-input text-sm">
+                          <option value="we">We (brand voice)</option>
+                          <option value="you">You (direct address)</option>
+                          <option value="i">I (personal/founder)</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div>
+                      <label class="label" for="bvVoiceDescription">Voice Description</label>
+                      <textarea id="bvVoiceDescription" class="glass-input text-sm" rows="3" placeholder="Describe your brand's personality in detail (e.g., We're bold, cinematic, and speak with architectural precision. We avoid jargon but use industry terms confidently.)"></textarea>
+                    </div>
+                  </div>
+
+                  <!-- Content Style -->
+                  <div class="space-y-4">
+                    <h4 class="text-sm font-semibold uppercase tracking-wide text-slate-300 border-b border-white/10 pb-2">Content Style</h4>
+                    <div class="grid md:grid-cols-2 gap-4">
+                      <div>
+                        <label class="label" for="bvCaptionStyle">Caption Style</label>
+                        <select id="bvCaptionStyle" class="glass-input text-sm">
+                          <option value="short">Short & punchy (1-2 sentences)</option>
+                          <option value="medium">Medium storytelling (3-5 sentences)</option>
+                          <option value="long">Long-form narrative (6+ sentences)</option>
+                          <option value="varied">Varied (mix it up)</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label class="label" for="bvEmojiUsage">Emoji Usage</label>
+                        <select id="bvEmojiUsage" class="glass-input text-sm">
+                          <option value="none">No emojis</option>
+                          <option value="minimal">Minimal (1-2 per caption)</option>
+                          <option value="moderate">Moderate (3-5)</option>
+                          <option value="heavy">Heavy (enthusiastic use)</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div>
+                      <label class="label" for="bvContentThemes">Content Themes</label>
+                      <input id="bvContentThemes" class="glass-input text-sm" placeholder="e.g., Behind-the-scenes, Client transformations, Tips & tutorials, Product showcases" />
+                    </div>
+                    <div>
+                      <label class="label" for="bvAvoidTopics">Topics to Avoid</label>
+                      <input id="bvAvoidTopics" class="glass-input text-sm" placeholder="e.g., Politics, Religion, Competitors" />
+                    </div>
+                  </div>
+
+                  <!-- CTAs & Engagement -->
+                  <div class="space-y-4">
+                    <h4 class="text-sm font-semibold uppercase tracking-wide text-slate-300 border-b border-white/10 pb-2">Calls to Action & Engagement</h4>
+                    <div class="grid md:grid-cols-2 gap-4">
+                      <div>
+                        <label class="label" for="bvDefaultCTA">Primary CTA</label>
+                        <input id="bvDefaultCTA" class="glass-input text-sm" placeholder='e.g., "Link in bio", "DM us", "Book now"' />
+                      </div>
+                      <div>
+                        <label class="label" for="bvSecondaryCTA">Secondary CTA</label>
+                        <input id="bvSecondaryCTA" class="glass-input text-sm" placeholder='e.g., "Share your thoughts", "Tag a friend"' />
+                      </div>
+                    </div>
+                    <div>
+                      <label class="label" for="bvEngagementStyle">Engagement Questions Style</label>
+                      <textarea id="bvEngagementStyle" class="glass-input text-sm" rows="2" placeholder="How do you like to end posts? (e.g., 'Always ask open-ended questions', 'Keep it simple with one-word prompts', 'Challenge audience to try something')"></textarea>
+                    </div>
+                  </div>
+
+                  <!-- Hashtags -->
+                  <div class="space-y-4">
+                    <h4 class="text-sm font-semibold uppercase tracking-wide text-slate-300 border-b border-white/10 pb-2">Hashtag Strategy</h4>
+                    <div class="grid md:grid-cols-2 gap-4">
+                      <div>
+                        <label class="label" for="bvHashtagStyle">Hashtag Placement</label>
+                        <select id="bvHashtagStyle" class="glass-input text-sm">
+                          <option value="inline">Inline with caption</option>
+                          <option value="endline">End of caption (same line)</option>
+                          <option value="separate">Separate line after caption</option>
+                          <option value="comment">First comment</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label class="label" for="bvHashtagCount">Hashtag Count</label>
+                        <select id="bvHashtagCount" class="glass-input text-sm">
+                          <option value="none">No hashtags</option>
+                          <option value="3-5">3-5 (targeted)</option>
+                          <option value="8-12">8-12 (balanced)</option>
+                          <option value="15-20">15-20 (reach-focused)</option>
+                          <option value="max">Max 30 (full coverage)</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div>
+                      <label class="label" for="bvBrandHashtags">Brand Hashtags</label>
+                      <input id="bvBrandHashtags" class="glass-input text-sm" placeholder="e.g., #YourBrandName #YourTagline #YourCampaign" />
+                      <p class="text-xs text-slate-500 mt-1">Always include these in every post</p>
+                    </div>
+                    <div>
+                      <label class="label" for="bvIndustryHashtags">Industry Hashtags</label>
+                      <input id="bvIndustryHashtags" class="glass-input text-sm" placeholder="e.g., #Architecture #Design #ModernHomes #InteriorDesign" />
+                      <p class="text-xs text-slate-500 mt-1">Core industry tags for discoverability</p>
+                    </div>
+                    <div>
+                      <label class="label" for="bvNicheHashtags">Niche/Community Hashtags</label>
+                      <input id="bvNicheHashtags" class="glass-input text-sm" placeholder="e.g., #ArchDaily #MinimalistLiving #SustainableArchitecture" />
+                    </div>
+                  </div>
+
+                  <!-- Visual & Formatting -->
+                  <div class="space-y-4">
+                    <h4 class="text-sm font-semibold uppercase tracking-wide text-slate-300 border-b border-white/10 pb-2">Visual & Formatting Preferences</h4>
+                    <div>
+                      <label class="label" for="bvVisualStyle">Visual Content Style</label>
+                      <input id="bvVisualStyle" class="glass-input text-sm" placeholder="e.g., Cinematic, Bright & airy, Dark & moody, Minimalist, Vibrant colors" />
+                    </div>
+                    <div class="grid md:grid-cols-2 gap-4">
+                      <div>
+                        <label class="label" for="bvLineBreaks">Line Breaks in Captions</label>
+                        <select id="bvLineBreaks" class="glass-input text-sm">
+                          <option value="minimal">Minimal (paragraph style)</option>
+                          <option value="moderate">Moderate (2-3 breaks)</option>
+                          <option value="heavy">Heavy (short lines, easy scan)</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label class="label" for="bvCapitalization">Capitalization Style</label>
+                        <select id="bvCapitalization" class="glass-input text-sm">
+                          <option value="standard">Standard (sentence case)</option>
+                          <option value="lowercase">all lowercase</option>
+                          <option value="title">Title Case</option>
+                          <option value="allcaps">ALL CAPS (for emphasis)</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Personal Touches -->
+                  <div class="space-y-4">
+                    <h4 class="text-sm font-semibold uppercase tracking-wide text-slate-300 border-b border-white/10 pb-2">Personal Touches & Signature Elements</h4>
+                    <div>
+                      <label class="label" for="bvSignatureSign">Signature Sign-off</label>
+                      <input id="bvSignatureSign" class="glass-input text-sm" placeholder='e.g., "- Team [Brand]", "xo", "Stay creative ✨", "[Founder Name]"' />
+                    </div>
+                    <div>
+                      <label class="label" for="bvRecurringPhrases">Recurring Phrases / Catchphrases</label>
+                      <input id="bvRecurringPhrases" class="glass-input text-sm" placeholder='e.g., "Designed with intention", "Frame-perfect", "Your story, elevated"' />
+                    </div>
+                    <div>
+                      <label class="label" for="bvCustomNotes">Additional Custom Notes</label>
+                      <textarea id="bvCustomNotes" class="glass-input text-sm" rows="3" placeholder="Any other specific preferences, inside jokes, brand quirks, or guidelines for AI..."></textarea>
+                    </div>
+                  </div>
+
+                  <div class="flex items-center gap-3 justify-end pt-4 border-t border-white/10">
+                    <button type="button" id="cancelBrandVoiceBtn" class="btn btn-ghost">Cancel</button>
+                    <button type="submit" class="btn btn-primary"><i class="fa-solid fa-save"></i><span>Save Brand Voice</span></button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+
+          <section class="glass-panel p-6 space-y-5" id="aiPrefsSection">
+            <div>
+              <h2 class="text-lg font-semibold">AI Preferences</h2>
+              <p class="panel-subtitle">Tune voice and default hashtags for caption & planning tools.</p>
+            </div>
+            <form id="aiFormProfile" class="form-grid">
+              <div>
+                <label class="label" for="brandVoiceP">Brand voice description</label>
+                <textarea id="brandVoiceP" class="glass-input" rows="3" placeholder="e.g. Confident, cinematic, architectural visualization studio"></textarea>
+              </div>
+              <div>
+                <label class="label" for="defaultHashtagsP">Default hashtags</label>
+                <input id="defaultHashtagsP" class="glass-input" placeholder="#viz #render #design" />
+              </div>
+              <div class="footer-actions">
+                <button class="btn btn-primary" type="submit"><i class="fa-solid fa-floppy-disk"></i><span>Save</span></button>
+              </div>
+            </form>
+          </section>
+        </div>
+      </div>
+    </div>
+
+    <script type="module" src="/js/profile.js"></script>
+  </body>
+</html>

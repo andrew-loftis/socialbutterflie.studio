@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="en" class="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes" />
+    <meta name="theme-color" content="#0d1117" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <title>Social Butterflie — Calendar</title>
+  <link rel="icon" href="/favicon.ico" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="./theme.css" />
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
+    <script>
+      // Apply theme immediately to prevent flash
+      (function() {
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        if (savedTheme === 'dark') {
+          document.documentElement.classList.add('dark-mode');
+          document.body.classList.add('dark-mode');
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <div class="app-layout">
+      <aside class="nav-rail">
+        <a href="./index.html" class="nav-brand">
+          <svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+            <!-- Left upper wing -->
+            <path d="M16 16 Q10 10, 5 12 Q3 13, 3 15 Q3 17, 5 18 Q10 20, 16 16" />
+            <!-- Right upper wing -->
+            <path d="M16 16 Q22 10, 27 12 Q29 13, 29 15 Q29 17, 27 18 Q22 20, 16 16" />
+            <!-- Left lower wing -->
+            <path d="M16 17 Q12 20, 8 22 Q6 23, 6 25 Q6 26, 7 27 Q11 28, 16 24" />
+            <!-- Right lower wing -->
+            <path d="M16 17 Q20 20, 24 22 Q26 23, 26 25 Q26 26, 25 27 Q21 28, 16 24" />
+            <!-- Body -->
+            <line x1="16" y1="6" x2="16" y2="28" />
+            <!-- Head -->
+            <circle cx="16" cy="6" r="1.5" />
+            <!-- Antennae -->
+            <path d="M15 6 Q13 3, 11 2" />
+            <path d="M17 6 Q19 3, 21 2" />
+          </svg>
+        </a>
+        <div class="nav-group">
+          <a href="./calendar.html" class="nav-item active" aria-label="Calendar">
+            <i class="fa-solid fa-calendar-days"></i>
+          </a>
+          <a href="./build.html" class="nav-item" aria-label="Build Post">
+            <i class="fa-solid fa-plus-circle"></i>
+          </a>
+          <a href="./analytics.html" class="nav-item" aria-label="Analytics">
+            <i class="fa-solid fa-chart-line"></i>
+          </a>
+          <a href="./storage.html" class="nav-item" aria-label="Storage">
+            <i class="fa-solid fa-cloud"></i>
+          </a>
+          <a href="./settings.html" class="nav-item" aria-label="Settings">
+            <i class="fa-solid fa-gear"></i>
+          </a>
+        </div>
+        <a href="./profile.html" class="nav-avatar" aria-label="Profile">
+          <i class="fa-solid fa-user"></i>
+        </a>
+      </aside>
+
+      <!-- Scroll to top button (mobile) -->
+      <button class="scroll-top-btn" id="scrollTopBtn" aria-label="Scroll to top">
+        <i class="fa-solid fa-chevron-up"></i>
+      </button>
+
+      <div class="main-surface">
+
+        <header class="top-bar glass-panel">
+          <div>
+            <h1>Content Calendar</h1>
+            <p>View and manage your scheduled posts across all platforms</p>
+          </div>
+          <div class="flex items-center gap-4 flex-wrap justify-end">
+            <button class="btn btn-primary" id="btn-new"><i class="fa-solid fa-plus"></i><span>New Post</span></button>
+          </div>
+        </header>
+
+        <div id="statusAlerts" class="hidden"></div>
+
+        <div class="mt-8">
+          <section class="glass-panel p-6 space-y-6">
+            <div class="panel-header flex-wrap">
+              <div>
+                <h2>Schedule</h2>
+                <p class="panel-subtitle">Click on any day to schedule a new post</p>
+              </div>
+              <div class="toolbar">
+                <div id="platformFilters" class="toolbar-group" aria-label="Platform filters">
+                  <button type="button" class="btn btn-ghost btn-toggle-active" data-provider="instagram" data-active="true"><i class="fa-brands fa-instagram"></i><span>Instagram</span></button>
+                  <button type="button" class="btn btn-ghost btn-toggle-active" data-provider="facebook" data-active="true"><i class="fa-brands fa-facebook"></i><span>Facebook</span></button>
+                  <button type="button" class="btn btn-ghost btn-toggle-active" data-provider="youtube" data-active="true"><i class="fa-brands fa-youtube"></i><span>YouTube</span></button>
+                  <button type="button" class="btn btn-ghost btn-toggle-active" data-provider="tiktok" data-active="true"><i class="fa-brands fa-tiktok"></i><span>TikTok</span></button>
+                </div>
+              </div>
+            </div>
+            <div id="calendar"></div>
+          </section>
+        </div>
+      </div>
+    </div>
+
+    <!-- New Post Modal -->
+    <div id="modal" class="modal-shell hidden">
+      <div class="modal-panel">
+        <div class="modal-header">
+          <h3 class="modal-title">Schedule Post</h3>
+          <button onclick="closeModal()" class="close-button" aria-label="Close"><i class="fa-regular fa-circle-xmark"></i></button>
+        </div>
+
+        <form id="postForm" class="form-grid">
+          <div class="form-grid split">
+            <div>
+              <label class="label" for="platform">Platform</label>
+              <select id="platform" class="glass-input">
+                <option value="instagram">Instagram</option>
+                <option value="facebook">Facebook Page</option>
+                <option value="youtube">YouTube</option>
+                <option value="tiktok">TikTok</option>
+              </select>
+            </div>
+            <div>
+              <label class="label" for="when">When</label>
+              <input id="when" type="datetime-local" class="glass-input" />
+            </div>
+          </div>
+
+          <div>
+            <label class="label" for="campaign">Campaign</label>
+            <div class="flex gap-3">
+              <select id="campaign" class="glass-input flex-1">
+                <option value="">No campaign</option>
+              </select>
+              <button type="button" class="btn btn-secondary" onclick="openCampaignManager()" aria-label="Create campaign"><i class="fa-solid fa-layer-group"></i></button>
+            </div>
+            <p class="text-xs text-slate-400 mt-2">Organize posts by campaign for analytics.</p>
+          </div>
+
+          <div>
+            <label class="label" for="caption">Caption</label>
+            <textarea id="caption" rows="3" class="glass-input" placeholder="Write something brilliant…"></textarea>
+          </div>
+
+            <div>
+              <label class="label" for="mediaUrl">Media URL (from Frame.io)</label>
+              <input id="mediaUrl" type="url" class="glass-input" placeholder="https://..." />
+              <p class="text-xs text-slate-400 mt-2">Tip: use the asset's original file URL from Frame.io (publicly accessible or signed URL).</p>
+            </div>
+
+          <div class="footer-actions">
+            <button type="button" class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+            <button class="btn btn-primary" type="submit">Schedule</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Mobile Bottom Navigation -->
+    <nav class="mobile-nav">
+      <a href="./index.html" class="nav-brand">
+        <svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+          <path d="M16 16 Q10 10, 5 12 Q3 13, 3 15 Q3 17, 5 18 Q10 20, 16 16" />
+          <path d="M16 16 Q22 10, 27 12 Q29 13, 29 15 Q29 17, 27 18 Q22 20, 16 16" />
+          <path d="M16 17 Q12 20, 8 22 Q6 23, 6 25 Q6 26, 7 27 Q11 28, 16 24" />
+          <path d="M16 17 Q20 20, 24 22 Q26 23, 26 25 Q26 26, 25 27 Q21 28, 16 24" />
+          <line x1="16" y1="6" x2="16" y2="28" />
+          <circle cx="16" cy="6" r="1.5" />
+        </svg>
+      </a>
+      <div class="nav-group">
+        <a href="./calendar.html" class="nav-item active" aria-label="Calendar"><i class="fa-solid fa-calendar-days"></i></a>
+        <a href="./build.html" class="nav-item" aria-label="Build Post"><i class="fa-solid fa-plus-circle"></i></a>
+        <a href="./analytics.html" class="nav-item" aria-label="Analytics"><i class="fa-solid fa-chart-line"></i></a>
+        <a href="./storage.html" class="nav-item" aria-label="Storage"><i class="fa-solid fa-cloud"></i></a>
+        <a href="./settings.html" class="nav-item" aria-label="Settings"><i class="fa-solid fa-gear"></i></a>
+      </div>
+      <a href="./profile.html" class="nav-avatar" aria-label="Profile"><i class="fa-solid fa-user"></i></a>
+    </nav>
+
+    <script type="module" src="/js/app.js"></script>
+  </body>
+</html>

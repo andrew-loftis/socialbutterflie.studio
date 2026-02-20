@@ -1,0 +1,17 @@
+[build]
+  command = "npm run build"
+  publish = "public"
+
+[functions]
+  node_bundler = "esbuild"
+  included_files = ["shared/**", "sql/**"]
+
+# Scheduled: run the scheduler every 5 minutes
+[[scheduled.functions]]
+  name = "scheduler"
+  cron = "*/5 * * * *"
+
+# Scheduled: refresh expiring tokens daily at 06:00
+[[scheduled.functions]]
+  name = "refresh_tokens"
+  cron = "0 6 * * *"

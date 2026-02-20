@@ -1,0 +1,315 @@
+<!doctype html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes" />
+  <meta name="theme-color" content="#f8f5ef" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>Social Butterflie  Dashboard</title>
+  <link rel="icon" href="/favicon.ico" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="./theme.css" />
+  <script>
+    // Apply theme immediately to prevent flash
+    (function() {
+      const savedTheme = localStorage.getItem('theme') || 'light';
+      if (savedTheme === 'dark') {
+        document.documentElement.classList.add('dark-mode');
+        document.body.classList.add('dark-mode');
+      }
+    })();
+  </script>
+</head>
+<body>
+  <div class="app-layout">
+    <aside class="nav-rail">
+      <a href="./index.html" class="nav-brand">
+        <svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+          <path d="M16 16 Q10 10, 5 12 Q3 13, 3 15 Q3 17, 5 18 Q10 20, 16 16" />
+          <path d="M16 16 Q22 10, 27 12 Q29 13, 29 15 Q29 17, 27 18 Q22 20, 16 16" />
+          <path d="M16 17 Q12 20, 8 22 Q6 23, 6 25 Q6 26, 7 27 Q11 28, 16 24" />
+          <path d="M16 17 Q20 20, 24 22 Q26 23, 26 25 Q26 26, 25 27 Q21 28, 16 24" />
+          <line x1="16" y1="6" x2="16" y2="28" />
+          <circle cx="16" cy="6" r="1.5" />
+        </svg>
+      </a>
+      <div class="nav-group">
+        <a href="./calendar.html" class="nav-item" aria-label="Calendar">
+          <i class="fa-solid fa-calendar-days"></i>
+        </a>
+        <a href="./build.html" class="nav-item" aria-label="Build Post">
+          <i class="fa-solid fa-plus-circle"></i>
+        </a>
+        <a href="./analytics.html" class="nav-item" aria-label="Analytics">
+          <i class="fa-solid fa-chart-line"></i>
+        </a>
+        <a href="./storage.html" class="nav-item" aria-label="Storage">
+          <i class="fa-solid fa-cloud"></i>
+        </a>
+        <a href="./settings.html" class="nav-item" aria-label="Settings">
+          <i class="fa-solid fa-gear"></i>
+        </a>
+      </div>
+      <a href="./profile.html" class="nav-avatar" aria-label="Profile">
+        <i class="fa-solid fa-user"></i>
+      </a>
+    </aside>
+    <div class="main-surface">
+      <!-- Hero Header -->
+      <header class="top-bar glass-panel">
+        <div>
+          <h1>Welcome back! 👋</h1>
+          <p>Here's what's happening with your social media today</p>
+        </div>
+        <div class="dashboard-date">
+          <i class="fa-solid fa-calendar"></i>
+          <span id="currentDate"></span>
+        </div>
+      </header>
+
+      <div class="space-y-8 mt-8">
+        <!-- Quick Stats Grid -->
+        <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-header">
+            <div class="stat-icon" style="background: linear-gradient(135deg, var(--accent), var(--accent-strong));">
+              <i class="fa-solid fa-clock"></i>
+            </div>
+            <div class="stat-trend stat-trend-up">
+              <i class="fa-solid fa-arrow-up"></i>
+              <span>12%</span>
+            </div>
+          </div>
+          <div class="stat-value" id="scheduledCount">0</div>
+          <div class="stat-label">Scheduled Posts</div>
+        </div>
+        
+        <div class="stat-card">
+          <div class="stat-header">
+            <div class="stat-icon" style="background: linear-gradient(135deg, var(--blue-primary), var(--blue-secondary));">
+              <i class="fa-solid fa-check-circle"></i>
+            </div>
+            <div class="stat-trend stat-trend-up">
+              <i class="fa-solid fa-arrow-up"></i>
+              <span>8%</span>
+            </div>
+          </div>
+          <div class="stat-value" id="publishedCount">0</div>
+          <div class="stat-label">Published This Week</div>
+        </div>
+        
+        <div class="stat-card">
+          <div class="stat-header">
+            <div class="stat-icon" style="background: linear-gradient(135deg, #8b5cf6, #7c3aed);">
+              <i class="fa-solid fa-heart"></i>
+            </div>
+            <div class="stat-trend stat-trend-up">
+              <i class="fa-solid fa-arrow-up"></i>
+              <span>24%</span>
+            </div>
+          </div>
+          <div class="stat-value">2.4K</div>
+          <div class="stat-label">Total Engagement</div>
+        </div>
+        
+        <div class="stat-card">
+          <div class="stat-header">
+            <div class="stat-icon" style="background: linear-gradient(135deg, #10b981, #059669);">
+              <i class="fa-solid fa-users"></i>
+            </div>
+            <div class="stat-trend stat-trend-up">
+              <i class="fa-solid fa-arrow-up"></i>
+              <span>15%</span>
+            </div>
+          </div>
+          <div class="stat-value">847</div>
+          <div class="stat-label">New Followers</div>
+        </div>
+        </div>
+
+        <!-- Main Grid Layout -->
+        <div class="dashboard-grid">
+        <!-- Connected Accounts -->
+        <section class="glass-panel p-6 space-y-6">
+          <div class="panel-header">
+            <div>
+              <h2>Connected Accounts</h2>
+              <p class="panel-subtitle">Manage your social media connections</p>
+            </div>
+            <button class="btn btn-secondary btn-sm">
+              <i class="fa-solid fa-plus"></i>
+              <span>Add Account</span>
+            </button>
+          </div>
+          <div id="connectionsGrid" class="connections-grid"></div>
+        </section>
+
+        <!-- Upcoming Posts -->
+        <section class="glass-panel p-6 space-y-6">
+          <div class="panel-header">
+            <div>
+              <h2>Upcoming Posts</h2>
+              <p class="panel-subtitle">Next 7 days</p>
+            </div>
+            <a href="./calendar.html" class="btn btn-ghost btn-sm">
+              View All
+              <i class="fa-solid fa-arrow-right"></i>
+            </a>
+          </div>
+          <div id="upcomingPosts" class="upcoming-posts-list"></div>
+        </section>
+
+        <!-- Campaigns & Groups -->
+        <section class="glass-panel p-6 space-y-6 dashboard-campaigns">
+          <div class="panel-header">
+            <div>
+              <h2>Campaigns & Groups</h2>
+              <p class="panel-subtitle">Organize your content strategy</p>
+            </div>
+            <button class="btn btn-primary btn-sm">
+              <i class="fa-solid fa-plus"></i>
+              <span>New Campaign</span>
+            </button>
+          </div>
+          <div id="campaignsGrid" class="campaigns-grid"></div>
+        </section>
+
+        <!-- AI Insights -->
+        <section class="glass-panel p-6 space-y-6 dashboard-insights">
+          <div class="panel-header">
+            <div>
+              <h2>AI Insights</h2>
+              <p class="panel-subtitle">Powered by your content data</p>
+            </div>
+            <button class="btn btn-ghost btn-sm" id="refreshInsights">
+              <i class="fa-solid fa-rotate"></i>
+            </button>
+          </div>
+          <div class="insights-grid">
+            <div class="insight-card">
+              <div class="insight-icon" style="background: linear-gradient(135deg, #f59e0b, #eab308);">
+                <i class="fa-solid fa-lightbulb"></i>
+              </div>
+              <div>
+                <h3>Best Time to Post</h3>
+                <p>Your audience is most active on weekdays between 2-4 PM</p>
+              </div>
+            </div>
+            <div class="insight-card">
+              <div class="insight-icon" style="background: linear-gradient(135deg, #ef4444, #dc2626);">
+                <i class="fa-solid fa-fire"></i>
+              </div>
+              <div>
+                <h3>Trending Content</h3>
+                <p>Video content is getting 3x more engagement this month</p>
+              </div>
+            </div>
+            <div class="insight-card">
+              <div class="insight-icon" style="background: linear-gradient(135deg, var(--blue-primary), #06b6d4);">
+                <i class="fa-solid fa-rocket"></i>
+              </div>
+              <div>
+                <h3>Growth Opportunity</h3>
+                <p>Instagram Stories have 45% more reach potential</p>
+              </div>
+            </div>
+          </div>
+        </section>
+        </div>
+      </div>
+    </div>
+    <nav class="mobile-nav">
+      <a href="./index.html" class="nav-brand">
+        <svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+          <path d="M16 16 Q10 10, 5 12 Q3 13, 3 15 Q3 17, 5 18 Q10 20, 16 16" />
+          <path d="M16 16 Q22 10, 27 12 Q29 13, 29 15 Q29 17, 27 18 Q22 20, 16 16" />
+          <path d="M16 17 Q12 20, 8 22 Q6 23, 6 25 Q6 26, 7 27 Q11 28, 16 24" />
+          <path d="M16 17 Q20 20, 24 22 Q26 23, 26 25 Q26 26, 25 27 Q21 28, 16 24" />
+          <line x1="16" y1="6" x2="16" y2="28" />
+          <circle cx="16" cy="6" r="1.5" />
+        </svg>
+      </a>
+      <div class="nav-group">
+        <a href="./calendar.html" class="nav-item" aria-label="Calendar"><i class="fa-solid fa-calendar-days"></i></a>
+        <a href="./build.html" class="nav-item" aria-label="Build Post"><i class="fa-solid fa-plus-circle"></i></a>
+        <a href="./analytics.html" class="nav-item" aria-label="Analytics"><i class="fa-solid fa-chart-line"></i></a>
+        <a href="./storage.html" class="nav-item" aria-label="Storage"><i class="fa-solid fa-cloud"></i></a>
+        <a href="./settings.html" class="nav-item" aria-label="Settings"><i class="fa-solid fa-gear"></i></a>
+      </div>
+      <a href="./profile.html" class="nav-avatar" aria-label="Profile"><i class="fa-solid fa-user"></i></a>
+    </nav>
+  </div>
+  <script>
+    function loadConnections() {
+      const connectionsGrid = document.getElementById('connectionsGrid');
+      const connections = [
+        { platform: 'Instagram', icon: 'fa-brands fa-instagram', color: '#e1306c', connected: true },
+        { platform: 'Facebook', icon: 'fa-brands fa-facebook', color: '#1877f2', connected: true },
+        { platform: 'YouTube', icon: 'fa-brands fa-youtube', color: '#ff0000', connected: false },
+        { platform: 'TikTok', icon: 'fa-brands fa-tiktok', color: '#000000', connected: false }
+      ];
+      connectionsGrid.innerHTML = connections.map(conn => 
+        `<div class="connection-card">
+          <div class="connection-icon" style="color: ${conn.color};">
+            <i class="${conn.icon}"></i>
+          </div>
+          <div class="connection-details">
+            <div class="connection-name">${conn.platform}</div>
+            <div class="connection-status">${conn.connected ? 'Connected' : 'Not Connected'}</div>
+          </div>
+          ${conn.connected ? '<i class="fa-solid fa-check-circle connection-check"></i>' : '<button class="btn btn-sm">Connect</button>'}
+        </div>`
+      ).join('');
+    }
+    function loadStats() {
+      document.getElementById('scheduledCount').textContent = '12';
+      document.getElementById('publishedCount').textContent = '8';
+    }
+    function loadCampaigns() {
+      const campaignsGrid = document.getElementById('campaignsGrid');
+      const campaigns = [
+        { name: 'Summer Sale 2024', posts: 15, platforms: ['instagram', 'facebook'], color: '#f59e0b' },
+        { name: 'Product Launch', posts: 8, platforms: ['youtube', 'tiktok'], color: '#8b5cf6' }
+      ];
+      campaignsGrid.innerHTML = campaigns.map(campaign => 
+        `<div class="campaign-card">
+          <div class="campaign-header">
+            <div class="campaign-marker" style="background: ${campaign.color};"></div>
+            <div>
+              <h3 class="campaign-name">${campaign.name}</h3>
+              <p class="campaign-posts">${campaign.posts} posts scheduled</p>
+            </div>
+          </div>
+          <div class="campaign-platforms">
+            ${campaign.platforms.map(p => `<i class="fa-brands fa-${p}"></i>`).join('')}
+          </div>
+        </div>`
+      ).join('');
+    }
+    function setCurrentDate() {
+      const dateEl = document.getElementById('currentDate');
+      const now = new Date();
+      const options = { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' };
+      dateEl.textContent = now.toLocaleDateString('en-US', options);
+    }
+    
+    // Apply saved theme on page load
+    function applyTheme() {
+      const savedTheme = localStorage.getItem('theme') || 'light';
+      if (savedTheme === 'dark') {
+        document.body.classList.add('dark-mode');
+      }
+    }
+    
+    document.addEventListener('DOMContentLoaded', function() {
+      applyTheme();
+      setCurrentDate();
+      loadConnections();
+      loadStats();
+      loadCampaigns();
+    });
+  </script>
+</body>
+</html>

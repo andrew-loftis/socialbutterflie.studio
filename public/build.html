@@ -1,0 +1,290 @@
+<!doctype html>
+<html lang="en" class="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes" />
+    <meta name="theme-color" content="#0d1117" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <title>Build Post — Social Butterflie</title>
+    <link rel="icon" href="/favicon.ico" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="./theme.css" />
+    <script>
+      // Apply theme immediately to prevent flash
+      (function() {
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        if (savedTheme === 'dark') {
+          document.documentElement.classList.add('dark-mode');
+          document.body.classList.add('dark-mode');
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <div class="app-layout">
+      <aside class="nav-rail">
+        <a href="./index.html" class="nav-brand">
+          <svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+            <path d="M16 16 Q10 10, 5 12 Q3 13, 3 15 Q3 17, 5 18 Q10 20, 16 16" />
+            <path d="M16 16 Q22 10, 27 12 Q29 13, 29 15 Q29 17, 27 18 Q22 20, 16 16" />
+            <path d="M16 17 Q12 20, 8 22 Q6 23, 6 25 Q6 26, 7 27 Q11 28, 16 24" />
+            <path d="M16 17 Q20 20, 24 22 Q26 23, 26 25 Q26 26, 25 27 Q21 28, 16 24" />
+            <line x1="16" y1="6" x2="16" y2="28" />
+            <circle cx="16" cy="6" r="1.5" />
+          </svg>
+        </a>
+        <div class="nav-group">
+          <a href="./calendar.html" class="nav-item" aria-label="Calendar">
+            <i class="fa-solid fa-calendar-days"></i>
+          </a>
+          <a href="./build.html" class="nav-item active" aria-label="Build Post">
+            <i class="fa-solid fa-plus-circle"></i>
+          </a>
+          <a href="./analytics.html" class="nav-item" aria-label="Analytics">
+            <i class="fa-solid fa-chart-line"></i>
+          </a>
+          <a href="./storage.html" class="nav-item" aria-label="Storage">
+            <i class="fa-solid fa-cloud"></i>
+          </a>
+          <a href="./settings.html" class="nav-item" aria-label="Settings">
+            <i class="fa-solid fa-gear"></i>
+          </a>
+        </div>
+        <a href="./profile.html" class="nav-avatar" aria-label="Profile">
+          <i class="fa-solid fa-user"></i>
+        </a>
+      </aside>
+
+      <div class="main-surface">
+        <header class="top-bar glass-panel">
+          <div>
+            <h1>Build Post</h1>
+            <p>Craft the perfect post with AI assistance, media from your storage, and multi-platform scheduling.</p>
+          </div>
+        </header>
+
+        <div class="section-grid mt-8">
+          <section class="glass-panel p-6 space-y-6">
+            <form id="buildPostForm" class="space-y-6">
+              
+              <!-- Platform Selection -->
+              <div>
+                <label class="label">Select Platform(s)</label>
+                <div id="platformSelector" class="platform-grid">
+                  <button type="button" class="platform-selector-btn" data-platform="instagram">
+                    <i class="fa-brands fa-instagram"></i>
+                    <span>Instagram</span>
+                    <div class="check-indicator"><i class="fa-solid fa-check"></i></div>
+                  </button>
+                  <button type="button" class="platform-selector-btn" data-platform="facebook">
+                    <i class="fa-brands fa-facebook"></i>
+                    <span>Facebook</span>
+                    <div class="check-indicator"><i class="fa-solid fa-check"></i></div>
+                  </button>
+                  <button type="button" class="platform-selector-btn" data-platform="youtube">
+                    <i class="fa-brands fa-youtube"></i>
+                    <span>YouTube</span>
+                    <div class="check-indicator"><i class="fa-solid fa-check"></i></div>
+                  </button>
+                  <button type="button" class="platform-selector-btn" data-platform="tiktok">
+                    <i class="fa-brands fa-tiktok"></i>
+                    <span>TikTok</span>
+                    <div class="check-indicator"><i class="fa-solid fa-check"></i></div>
+                  </button>
+                </div>
+              </div>
+
+              <div class="divider"></div>
+
+              <!-- Media Upload -->
+              <div>
+                <label class="label">Media</label>
+                <div class="media-upload-zone" id="mediaZone">
+                  <div class="media-upload-placeholder">
+                    <i class="fa-solid fa-cloud-arrow-up text-5xl mb-3 opacity-30"></i>
+                    <p class="text-sm font-medium">Drop media here or click to browse</p>
+                    <p class="text-xs text-muted mt-2">Or select from connected storage below</p>
+                  </div>
+                  <input type="file" id="mediaInput" accept="image/*,video/*" multiple class="hidden" />
+                </div>
+
+                <div class="flex gap-3 mt-3">
+                  <button type="button" class="btn btn-secondary flex-1" onclick="document.getElementById('mediaInput').click()">
+                    <i class="fa-solid fa-upload"></i>
+                    <span>Upload File</span>
+                  </button>
+                  <button type="button" class="btn btn-secondary flex-1" onclick="openStoragePicker()">
+                    <i class="fa-solid fa-cloud"></i>
+                    <span>From Storage</span>
+                  </button>
+                  <button type="button" class="btn btn-ghost" onclick="pasteMediaUrl()">
+                    <i class="fa-solid fa-link"></i>
+                  </button>
+                </div>
+
+                <div id="mediaPreview" class="media-preview-grid"></div>
+              </div>
+
+              <div class="divider"></div>
+
+              <!-- Caption -->
+              <div>
+                <div class="flex items-center justify-between mb-2">
+                  <label class="label mb-0">Caption</label>
+                  <div class="flex gap-2">
+                    <button type="button" class="btn btn-ghost btn-sm" onclick="openAIAssist()">
+                      <i class="fa-solid fa-wand-magic-sparkles"></i>
+                      <span>AI Assist</span>
+                    </button>
+                    <button type="button" class="btn btn-ghost btn-sm" onclick="addEmoji()">
+                      <i class="fa-regular fa-face-smile"></i>
+                    </button>
+                  </div>
+                </div>
+                <textarea id="caption" class="glass-input" rows="6" placeholder="Write your caption..."></textarea>
+                <div class="flex justify-between text-xs text-muted mt-2">
+                  <span id="charCount">0 characters</span>
+                  <span id="hashtagCount">0 hashtags</span>
+                </div>
+              </div>
+
+              <!-- Campaign & Scheduling -->
+              <div class="grid gap-4 md:grid-cols-2">
+                <div>
+                  <label class="label" for="campaign">Campaign (Optional)</label>
+                  <select id="campaign" class="glass-input">
+                    <option value="">No campaign</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="label" for="scheduleTime">Schedule For</label>
+                  <input type="datetime-local" id="scheduleTime" class="glass-input" />
+                </div>
+              </div>
+
+              <!-- Action Buttons -->
+              <div class="flex gap-3 mt-6">
+                <button type="button" class="btn btn-ghost flex-1" onclick="saveDraft()">
+                  <i class="fa-regular fa-floppy-disk"></i>
+                  <span>Save Draft</span>
+                </button>
+                <button type="button" class="btn btn-secondary flex-1" onclick="preview()">
+                  <i class="fa-regular fa-eye"></i>
+                  <span>Preview</span>
+                </button>
+                <button type="submit" class="btn btn-primary flex-1">
+                  <i class="fa-solid fa-paper-plane"></i>
+                  <span>Schedule Post</span>
+                </button>
+              </div>
+            </form>
+          </section>
+
+          <aside class="card-stack">
+            <!-- AI Assistant Panel -->
+            <div class="glass-panel p-6 space-y-5">
+              <div class="flex items-center justify-between gap-3">
+                <div>
+                  <h2 class="text-lg font-semibold">AI Assistant</h2>
+                  <p class="panel-subtitle">Smart suggestions for your post</p>
+                </div>
+                <span class="badge">BETA</span>
+              </div>
+              
+              <div class="ai-pill-set">
+                <button class="btn btn-ghost" onclick="generateCaption()">
+                  <i class="fa-solid fa-pen-nib"></i>
+                  <span>Caption Ideas</span>
+                </button>
+                <button class="btn btn-ghost" onclick="generateHashtags()">
+                  <i class="fa-solid fa-hashtag"></i>
+                  <span>Hashtags</span>
+                </button>
+                <button class="btn btn-ghost" onclick="improveCaption()">
+                  <i class="fa-solid fa-magic-wand-sparkles"></i>
+                  <span>Improve</span>
+                </button>
+                <button class="btn btn-ghost" onclick="generateAltText()">
+                  <i class="fa-regular fa-image"></i>
+                  <span>Alt Text</span>
+                </button>
+              </div>
+
+              <div class="caption-card">
+                <div class="text-xs uppercase tracking-wide text-slate-400">Best Time to Post</div>
+                <div class="text-sm text-slate-200 leading-relaxed mt-2">
+                  <i class="fa-regular fa-clock"></i> 
+                  Based on your audience, try posting today at <strong>6:30 PM</strong> or tomorrow at <strong>10:00 AM</strong>
+                </div>
+              </div>
+            </div>
+
+            <!-- Storage Quick Access -->
+            <div class="glass-panel p-6 space-y-4">
+              <div class="flex items-center justify-between">
+                <div>
+                  <h2 class="text-lg font-semibold">Recent Media</h2>
+                  <p class="panel-subtitle">From connected storage</p>
+                </div>
+                <button class="btn btn-ghost btn-sm" onclick="window.location.href='./storage.html'">
+                  <span>View All</span>
+                  <i class="fa-solid fa-arrow-right"></i>
+                </button>
+              </div>
+              <div id="recentMedia" class="space-y-3 text-sm text-muted">
+                Connect storage to see recent files.
+              </div>
+            </div>
+
+            <!-- Platform Tips -->
+            <div class="glass-panel p-6 space-y-4">
+              <h2 class="text-lg font-semibold">Platform Tips</h2>
+              <div class="space-y-3 text-sm">
+                <div class="caption-card">
+                  <div class="flex items-center gap-2 mb-2">
+                    <i class="fa-brands fa-instagram text-lg" style="color: #e1306c;"></i>
+                    <span class="font-medium text-slate-200">Instagram</span>
+                  </div>
+                  <p class="text-xs text-muted">Max 30 hashtags • Square or 4:5 ratio • Captions up to 2,200 chars</p>
+                </div>
+                <div class="caption-card">
+                  <div class="flex items-center gap-2 mb-2">
+                    <i class="fa-brands fa-tiktok text-lg" style="color: #010101; background: white; border-radius: 4px; padding: 2px;"></i>
+                    <span class="font-medium text-slate-200">TikTok</span>
+                  </div>
+                  <p class="text-xs text-muted">15-60s videos • 9:16 vertical • Trending sounds boost reach</p>
+                </div>
+              </div>
+            </div>
+          </aside>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mobile Bottom Navigation -->
+    <nav class="mobile-nav">
+      <a href="./index.html" class="nav-brand">
+        <svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+          <path d="M16 16 Q10 10, 5 12 Q3 13, 3 15 Q3 17, 5 18 Q10 20, 16 16" />
+          <path d="M16 16 Q22 10, 27 12 Q29 13, 29 15 Q29 17, 27 18 Q22 20, 16 16" />
+          <path d="M16 17 Q12 20, 8 22 Q6 23, 6 25 Q6 26, 7 27 Q11 28, 16 24" />
+          <path d="M16 17 Q20 20, 24 22 Q26 23, 26 25 Q26 26, 25 27 Q21 28, 16 24" />
+          <line x1="16" y1="6" x2="16" y2="28" />
+          <circle cx="16" cy="6" r="1.5" />
+        </svg>
+      </a>
+      <div class="nav-group">
+        <a href="./calendar.html" class="nav-item" aria-label="Calendar"><i class="fa-solid fa-calendar-days"></i></a>
+        <a href="./build.html" class="nav-item active" aria-label="Build Post"><i class="fa-solid fa-plus-circle"></i></a>
+        <a href="./analytics.html" class="nav-item" aria-label="Analytics"><i class="fa-solid fa-chart-line"></i></a>
+        <a href="./storage.html" class="nav-item" aria-label="Storage"><i class="fa-solid fa-cloud"></i></a>
+        <a href="./settings.html" class="nav-item" aria-label="Settings"><i class="fa-solid fa-gear"></i></a>
+      </div>
+      <a href="./profile.html" class="nav-avatar" aria-label="Profile"><i class="fa-solid fa-user"></i></a>
+    </nav>
+
+    <script type="module" src="/js/build.js"></script>
+  </body>
+</html>

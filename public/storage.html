@@ -1,0 +1,365 @@
+<!doctype html>
+<html lang="en" class="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes" />
+    <meta name="theme-color" content="#0d1117" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <title>Storage — Social Butterflie</title>
+    <link rel="icon" href="/favicon.ico" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="./theme.css" />
+    <script>
+      // Apply theme immediately to prevent flash
+      (function() {
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        if (savedTheme === 'dark') {
+          document.documentElement.classList.add('dark-mode');
+          document.body.classList.add('dark-mode');
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <div class="app-layout">
+      <aside class="nav-rail">
+        <a href="./index.html" class="nav-brand">
+          <svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+            <path d="M16 16 Q10 10, 5 12 Q3 13, 3 15 Q3 17, 5 18 Q10 20, 16 16" />
+            <path d="M16 16 Q22 10, 27 12 Q29 13, 29 15 Q29 17, 27 18 Q22 20, 16 16" />
+            <path d="M16 17 Q12 20, 8 22 Q6 23, 6 25 Q6 26, 7 27 Q11 28, 16 24" />
+            <path d="M16 17 Q20 20, 24 22 Q26 23, 26 25 Q26 26, 25 27 Q21 28, 16 24" />
+            <line x1="16" y1="6" x2="16" y2="28" />
+            <circle cx="16" cy="6" r="1.5" />
+          </svg>
+        </a>
+        <div class="nav-group">
+          <a href="./calendar.html" class="nav-item" aria-label="Calendar">
+            <i class="fa-solid fa-calendar-days"></i>
+          </a>
+          <a href="./build.html" class="nav-item" aria-label="Build Post">
+            <i class="fa-solid fa-plus-circle"></i>
+          </a>
+          <a href="./analytics.html" class="nav-item" aria-label="Analytics">
+            <i class="fa-solid fa-chart-line"></i>
+          </a>
+          <a href="./storage.html" class="nav-item active" aria-label="Storage">
+            <i class="fa-solid fa-cloud"></i>
+          </a>
+          <a href="./settings.html" class="nav-item" aria-label="Settings">
+            <i class="fa-solid fa-gear"></i>
+          </a>
+        </div>
+        <a href="./profile.html" class="nav-avatar" aria-label="Profile">
+          <i class="fa-solid fa-user"></i>
+        </a>
+      </aside>
+
+      <!-- Scroll to top button (mobile) -->
+      <button class="scroll-top-btn" id="scrollTopBtn" aria-label="Scroll to top">
+        <i class="fa-solid fa-chevron-up"></i>
+      </button>
+
+      <div class="main-surface">
+        <header class="top-bar glass-panel">
+          <div>
+            <h1>Cloud Storage</h1>
+            <p>Connect your cloud storage to access media files directly in Social Butterflie.</p>
+          </div>
+        </header>
+
+        <div class="section-grid mt-8">
+          <section class="glass-panel p-6 space-y-6">
+            <div class="panel-header">
+              <div>
+                <h2>Connected Storage</h2>
+                <p class="panel-subtitle">Manage your cloud storage integrations and access permissions.</p>
+              </div>
+            </div>
+
+            <div id="connectedStorage" class="storage-grid">
+              <!-- Connected storage will appear here -->
+            </div>
+
+            <div class="divider"></div>
+
+            <div>
+              <h3 class="text-lg font-semibold mb-4">Available Storage Providers</h3>
+              <div class="storage-grid">
+                
+                <!-- Frame.io -->
+                <div class="storage-card" data-provider="frameio">
+                  <div class="storage-card-header">
+                    <div class="storage-icon" style="background: linear-gradient(135deg, #6366f1, #8b5cf6);">
+                      <i class="fa-solid fa-film"></i>
+                    </div>
+                    <div class="flex-1">
+                      <h4 class="storage-title">Frame.io</h4>
+                      <p class="storage-subtitle">Video collaboration & review</p>
+                    </div>
+                  </div>
+                  <p class="storage-description">Access approved video assets and project files directly from Frame.io.</p>
+                  <div class="storage-features">
+                    <span class="feature-tag"><i class="fa-solid fa-check"></i> Video files</span>
+                    <span class="feature-tag"><i class="fa-solid fa-check"></i> Comments</span>
+                    <span class="feature-tag"><i class="fa-solid fa-check"></i> Approvals</span>
+                  </div>
+                  <button class="btn btn-primary w-full" onclick="connectStorage('frameio')">
+                    <i class="fa-solid fa-plug"></i>
+                    <span>Connect Frame.io</span>
+                  </button>
+                </div>
+
+                <!-- Google Drive -->
+                <div class="storage-card" data-provider="gdrive">
+                  <div class="storage-card-header">
+                    <div class="storage-icon" style="background: linear-gradient(135deg, #4285f4, #34a853);">
+                      <i class="fa-brands fa-google-drive"></i>
+                    </div>
+                    <div class="flex-1">
+                      <h4 class="storage-title">Google Drive</h4>
+                      <p class="storage-subtitle">Google Workspace storage</p>
+                    </div>
+                  </div>
+                  <p class="storage-description">Access images, videos, and documents from your Google Drive.</p>
+                  <div class="storage-features">
+                    <span class="feature-tag"><i class="fa-solid fa-check"></i> Images</span>
+                    <span class="feature-tag"><i class="fa-solid fa-check"></i> Videos</span>
+                    <span class="feature-tag"><i class="fa-solid fa-check"></i> Documents</span>
+                  </div>
+                  <button class="btn btn-primary w-full" onclick="connectStorage('gdrive')">
+                    <i class="fa-solid fa-plug"></i>
+                    <span>Connect Google Drive</span>
+                  </button>
+                </div>
+
+                <!-- Dropbox -->
+                <div class="storage-card" data-provider="dropbox">
+                  <div class="storage-card-header">
+                    <div class="storage-icon" style="background: linear-gradient(135deg, #0061ff, #0070ff);">
+                      <i class="fa-brands fa-dropbox"></i>
+                    </div>
+                    <div class="flex-1">
+                      <h4 class="storage-title">Dropbox</h4>
+                      <p class="storage-subtitle">File storage & sharing</p>
+                    </div>
+                  </div>
+                  <p class="storage-description">Browse and share files stored in your Dropbox account.</p>
+                  <div class="storage-features">
+                    <span class="feature-tag"><i class="fa-solid fa-check"></i> All files</span>
+                    <span class="feature-tag"><i class="fa-solid fa-check"></i> Shared folders</span>
+                    <span class="feature-tag"><i class="fa-solid fa-check"></i> Paper docs</span>
+                  </div>
+                  <button class="btn btn-primary w-full" onclick="connectStorage('dropbox')">
+                    <i class="fa-solid fa-plug"></i>
+                    <span>Connect Dropbox</span>
+                  </button>
+                </div>
+
+                <!-- OneDrive -->
+                <div class="storage-card" data-provider="onedrive">
+                  <div class="storage-card-header">
+                    <div class="storage-icon" style="background: linear-gradient(135deg, #0078d4, #00a2ed);">
+                      <i class="fa-brands fa-microsoft"></i>
+                    </div>
+                    <div class="flex-1">
+                      <h4 class="storage-title">OneDrive</h4>
+                      <p class="storage-subtitle">Microsoft cloud storage</p>
+                    </div>
+                  </div>
+                  <p class="storage-description">Access files from OneDrive and SharePoint libraries.</p>
+                  <div class="storage-features">
+                    <span class="feature-tag"><i class="fa-solid fa-check"></i> Personal files</span>
+                    <span class="feature-tag"><i class="fa-solid fa-check"></i> SharePoint</span>
+                    <span class="feature-tag"><i class="fa-solid fa-check"></i> Teams files</span>
+                  </div>
+                  <button class="btn btn-primary w-full" onclick="connectStorage('onedrive')">
+                    <i class="fa-solid fa-plug"></i>
+                    <span>Connect OneDrive</span>
+                  </button>
+                </div>
+
+                <!-- Box -->
+                <div class="storage-card" data-provider="box">
+                  <div class="storage-card-header">
+                    <div class="storage-icon" style="background: linear-gradient(135deg, #0061d5, #0073ea);">
+                      <i class="fa-solid fa-box"></i>
+                    </div>
+                    <div class="flex-1">
+                      <h4 class="storage-title">Box</h4>
+                      <p class="storage-subtitle">Enterprise content management</p>
+                    </div>
+                  </div>
+                  <p class="storage-description">Connect to Box for secure enterprise file storage and collaboration.</p>
+                  <div class="storage-features">
+                    <span class="feature-tag"><i class="fa-solid fa-check"></i> All files</span>
+                    <span class="feature-tag"><i class="fa-solid fa-check"></i> Collections</span>
+                    <span class="feature-tag"><i class="fa-solid fa-check"></i> Notes</span>
+                  </div>
+                  <button class="btn btn-primary w-full" onclick="connectStorage('box')">
+                    <i class="fa-solid fa-plug"></i>
+                    <span>Connect Box</span>
+                  </button>
+                </div>
+
+                <!-- iCloud -->
+                <div class="storage-card" data-provider="icloud">
+                  <div class="storage-card-header">
+                    <div class="storage-icon" style="background: linear-gradient(135deg, #3b99fc, #5ac8fa);">
+                      <i class="fa-brands fa-apple"></i>
+                    </div>
+                    <div class="flex-1">
+                      <h4 class="storage-title">iCloud Drive</h4>
+                      <p class="storage-subtitle">Apple cloud storage</p>
+                    </div>
+                  </div>
+                  <p class="storage-description">Access photos, videos, and files stored in your iCloud Drive.</p>
+                  <div class="storage-features">
+                    <span class="feature-tag"><i class="fa-solid fa-check"></i> iCloud Photos</span>
+                    <span class="feature-tag"><i class="fa-solid fa-check"></i> Files</span>
+                    <span class="feature-tag"><i class="fa-solid fa-check"></i> Shared albums</span>
+                  </div>
+                  <button class="btn btn-primary w-full" onclick="connectStorage('icloud')">
+                    <i class="fa-solid fa-plug"></i>
+                    <span>Connect iCloud</span>
+                  </button>
+                </div>
+
+                <!-- Amazon S3 -->
+                <div class="storage-card" data-provider="s3">
+                  <div class="storage-card-header">
+                    <div class="storage-icon" style="background: linear-gradient(135deg, #ff9900, #ff6600);">
+                      <i class="fa-brands fa-aws"></i>
+                    </div>
+                    <div class="flex-1">
+                      <h4 class="storage-title">Amazon S3</h4>
+                      <p class="storage-subtitle">AWS object storage</p>
+                    </div>
+                  </div>
+                  <p class="storage-description">Connect to S3 buckets for scalable cloud storage and CDN delivery.</p>
+                  <div class="storage-features">
+                    <span class="feature-tag"><i class="fa-solid fa-check"></i> S3 buckets</span>
+                    <span class="feature-tag"><i class="fa-solid fa-check"></i> CloudFront</span>
+                    <span class="feature-tag"><i class="fa-solid fa-check"></i> Custom domains</span>
+                  </div>
+                  <button class="btn btn-primary w-full" onclick="connectStorage('s3')">
+                    <i class="fa-solid fa-plug"></i>
+                    <span>Connect Amazon S3</span>
+                  </button>
+                </div>
+
+                <!-- Vimeo -->
+                <div class="storage-card" data-provider="vimeo">
+                  <div class="storage-card-header">
+                    <div class="storage-icon" style="background: linear-gradient(135deg, #1ab7ea, #00adef);">
+                      <i class="fa-brands fa-vimeo-v"></i>
+                    </div>
+                    <div class="flex-1">
+                      <h4 class="storage-title">Vimeo</h4>
+                      <p class="storage-subtitle">Video hosting platform</p>
+                    </div>
+                  </div>
+                  <p class="storage-description">Access and share your professional video content from Vimeo.</p>
+                  <div class="storage-features">
+                    <span class="feature-tag"><i class="fa-solid fa-check"></i> Videos</span>
+                    <span class="feature-tag"><i class="fa-solid fa-check"></i> Showcases</span>
+                    <span class="feature-tag"><i class="fa-solid fa-check"></i> Analytics</span>
+                  </div>
+                  <button class="btn btn-primary w-full" onclick="connectStorage('vimeo')">
+                    <i class="fa-solid fa-plug"></i>
+                    <span>Connect Vimeo</span>
+                  </button>
+                </div>
+
+              </div>
+            </div>
+          </section>
+
+          <aside class="card-stack">
+            <div class="glass-panel p-6 space-y-5">
+              <div>
+                <h2 class="text-lg font-semibold">Storage Benefits</h2>
+                <p class="panel-subtitle">Why connect cloud storage?</p>
+              </div>
+              <ul class="space-y-3 text-sm">
+                <li class="flex items-start gap-3">
+                  <i class="fa-solid fa-bolt text-accent mt-1"></i>
+                  <div>
+                    <div class="font-medium text-slate-200">Quick Access</div>
+                    <div class="text-muted">Browse and select files without leaving Social Butterflie.</div>
+                  </div>
+                </li>
+                <li class="flex items-start gap-3">
+                  <i class="fa-solid fa-shield-halved text-accent mt-1"></i>
+                  <div>
+                    <div class="font-medium text-slate-200">Secure & Private</div>
+                    <div class="text-muted">We never store your files. Direct connections only.</div>
+                  </div>
+                </li>
+                <li class="flex items-start gap-3">
+                  <i class="fa-solid fa-sync text-accent mt-1"></i>
+                  <div>
+                    <div class="font-medium text-slate-200">Auto Sync</div>
+                    <div class="text-muted">See your latest files in real-time.</div>
+                  </div>
+                </li>
+                <li class="flex items-start gap-3">
+                  <i class="fa-solid fa-users text-accent mt-1"></i>
+                  <div>
+                    <div class="font-medium text-slate-200">Team Collaboration</div>
+                    <div class="text-muted">Share access across your team workspace.</div>
+                  </div>
+                </li>
+              </ul>
+            </div>
+
+            <div class="glass-panel p-6 space-y-4">
+              <div>
+                <h2 class="text-lg font-semibold">Need Help?</h2>
+                <p class="panel-subtitle">Common questions</p>
+              </div>
+              <div class="caption-card">
+                <div class="text-sm font-medium text-slate-200">How many storage providers can I connect?</div>
+                <div class="text-xs text-muted mt-2">Connect unlimited storage providers. Mix and match based on your workflow.</div>
+              </div>
+              <div class="caption-card">
+                <div class="text-sm font-medium text-slate-200">Can I disconnect storage?</div>
+                <div class="text-xs text-muted mt-2">Yes, revoke access anytime from this page. Your files remain in your storage.</div>
+              </div>
+              <div class="caption-card">
+                <div class="text-sm font-medium text-slate-200">What file types are supported?</div>
+                <div class="text-xs text-muted mt-2">Images (JPG, PNG, GIF, WebP), Videos (MP4, MOV, WebM), and Documents (PDF).</div>
+              </div>
+            </div>
+          </aside>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mobile Bottom Navigation -->
+    <nav class="mobile-nav">
+      <a href="./index.html" class="nav-brand">
+        <svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+          <path d="M16 16 Q10 10, 5 12 Q3 13, 3 15 Q3 17, 5 18 Q10 20, 16 16" />
+          <path d="M16 16 Q22 10, 27 12 Q29 13, 29 15 Q29 17, 27 18 Q22 20, 16 16" />
+          <path d="M16 17 Q12 20, 8 22 Q6 23, 6 25 Q6 26, 7 27 Q11 28, 16 24" />
+          <path d="M16 17 Q20 20, 24 22 Q26 23, 26 25 Q26 26, 25 27 Q21 28, 16 24" />
+          <line x1="16" y1="6" x2="16" y2="28" />
+          <circle cx="16" cy="6" r="1.5" />
+        </svg>
+      </a>
+      <div class="nav-group">
+        <a href="./calendar.html" class="nav-item" aria-label="Calendar"><i class="fa-solid fa-calendar-days"></i></a>
+        <a href="./build.html" class="nav-item" aria-label="Build Post"><i class="fa-solid fa-plus-circle"></i></a>
+        <a href="./analytics.html" class="nav-item" aria-label="Analytics"><i class="fa-solid fa-chart-line"></i></a>
+        <a href="./storage.html" class="nav-item active" aria-label="Storage"><i class="fa-solid fa-cloud"></i></a>
+        <a href="./settings.html" class="nav-item" aria-label="Settings"><i class="fa-solid fa-gear"></i></a>
+      </div>
+      <a href="./profile.html" class="nav-avatar" aria-label="Profile"><i class="fa-solid fa-user"></i></a>
+    </nav>
+
+    <script type="module" src="/js/storage.js"></script>
+  </body>
+</html>
