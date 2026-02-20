@@ -77,6 +77,7 @@ export function CompanySelector({ nextHref = '/dashboard' }: Props) {
 
   async function onCreateCompany() {
     const name = createName.trim();
+    const hadCompanies = companies.length > 0;
     if (!name) {
       setStatus('Company name is required.');
       return;
@@ -94,6 +95,12 @@ export function CompanySelector({ nextHref = '/dashboard' }: Props) {
       setCreateName('');
       setCoverFile(null);
       setSelectedCompanyId(company.id);
+      if (!hadCompanies) {
+        setActiveCompany(company.id);
+        markCompanyGateSeen(true);
+        router.replace(nextHref);
+        return;
+      }
       setStatus('Company created. Select it to continue.');
     } catch (error) {
       setStatus(error instanceof Error ? error.message : 'Failed to create company');

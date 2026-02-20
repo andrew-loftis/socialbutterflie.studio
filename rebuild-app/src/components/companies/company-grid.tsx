@@ -1,25 +1,86 @@
 "use client";
 
 import Link from 'next/link';
+import { useState } from 'react';
 import { Layers, Mic2, Palette, Sparkles, Users } from 'lucide-react';
 import { EntityCard } from '@/components/ui/entity-card';
 import { useAppState } from '@/components/shell/app-state';
+import { createCompany } from '@/lib/firebase/company-store';
 import type { InspectorEntityPayload } from '@/types/interfaces';
 
 const sectionIcons = [Layers, Mic2, Palette, Users, Sparkles];
 const sectionLabels = ['Identity', 'Voice', 'Visual', 'Audience', 'Content'];
 
 export function CompanyGrid() {
-  const { companies } = useAppState();
+  const { appContext, companies, setActiveCompany, markCompanyGateSeen } = useAppState();
+  const [createName, setCreateName] = useState('');
+  const [primary, setPrimary] = useState('#5ba0ff');
+  const [secondary, setSecondary] = useState('#2f436b');
+  const [accent, setAccent] = useState('#98c2ff');
+  const [loading, setLoading] = useState(false);
+  const [status, setStatus] = useState<string | null>(null);
+
+  async function onCreateCompany() {
+    const name = createName.trim();
+    if (!name) {
+      setStatus('Company name is required.');
+      return;
+    }
+
+    setLoading(true);
+    setStatus(null);
+    try {
+      const company = await createCompany({
+        workspaceId: appContext.workspaceId,
+        userId: appContext.userId,
+        name,
+        branding: { primary, secondary, accent },
+      });
+      setCreateName('');
+      setActiveCompany(company.id);
+      markCompanyGateSeen(true);
+      setStatus(`Created ${company.name}.`);
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : 'Failed to create company');
+    } finally {
+      setLoading(false);
+    }
+  }
 
   if (!companies.length) {
     return (
       <section className="panel">
         <h3>No companies yet</h3>
-        <p>Create your first company from the selector screen and return here to edit full profile details.</p>
-        <div className="button-row">
-          <Link className="btn-primary" href="/select-company">Open Company Selector</Link>
+        <p>Create your first company to unlock company-scoped analytics, assets, and invites.</p>
+        <div className="form-grid two-col">
+          <label className="two-col-span">
+            <span>Company name</span>
+            <input
+              value={createName}
+              onChange={(event) => setCreateName(event.target.value)}
+              placeholder="Acme Media Group"
+            />
+          </label>
+          <label>
+            <span>Primary color</span>
+            <input type="color" value={primary} onChange={(event) => setPrimary(event.target.value)} />
+          </label>
+          <label>
+            <span>Secondary color</span>
+            <input type="color" value={secondary} onChange={(event) => setSecondary(event.target.value)} />
+          </label>
+          <label>
+            <span>Accent color</span>
+            <input type="color" value={accent} onChange={(event) => setAccent(event.target.value)} />
+          </label>
         </div>
+        <div className="button-row">
+          <button type="button" className="btn-primary" onClick={onCreateCompany} disabled={loading}>
+            {loading ? 'Creating...' : 'Create Company'}
+          </button>
+          <Link className="btn-ghost" href="/select-company">Open Selector</Link>
+        </div>
+        {status ? <p className="text-sm text-[var(--muted)]">{status}</p> : null}
       </section>
     );
   }
@@ -67,4 +128,3 @@ export function CompanyGrid() {
     </section>
   );
 }
-

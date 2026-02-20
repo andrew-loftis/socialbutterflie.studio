@@ -81,7 +81,7 @@ export function CompanyMembersManager({ companyId }: Props) {
           members.map((member) => (
             <div key={member.id} className="selector-member-row">
               <span>{member.name || member.email}</span>
-              <span className="badge">{member.role} • {member.status}</span>
+              <span className="badge">{member.role} | {member.status}</span>
             </div>
           ))
         ) : (
@@ -92,4 +92,3 @@ export function CompanyMembersManager({ companyId }: Props) {
     </section>
   );
 }
-

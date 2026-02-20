@@ -12,7 +12,7 @@ export default function HomePage() {
 
   useEffect(() => {
     if (!loading && (!hasFirebaseClientConfig || user)) {
-      router.replace(hasFirebaseClientConfig ? '/select-company' : '/dashboard');
+      router.replace('/dashboard');
     }
   }, [loading, router, user]);
 

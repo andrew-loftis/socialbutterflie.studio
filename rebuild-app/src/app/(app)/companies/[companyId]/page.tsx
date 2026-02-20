@@ -36,7 +36,7 @@ export default function CompanyDetailPage() {
     <div className="space-y-3">
       <PageHeader
         title={company.name}
-        subtitle={`Brand profile • ${company.completionScore}% complete`}
+        subtitle={`Brand profile | ${company.completionScore}% complete`}
         actions={<Link className="btn-primary" href={`/companies/${company.id}/intake`}>Open Intake Wizard</Link>}
       />
       <CompanyMembersManager companyId={company.id} />
@@ -44,4 +44,5 @@ export default function CompanyDetailPage() {
     </div>
   );
 }
+
 

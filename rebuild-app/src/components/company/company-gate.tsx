@@ -14,18 +14,20 @@ export function CompanyGate({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!hasFirebaseClientConfig || loading || !user) return;
+    const requiresSelection = companies.length > 1;
 
-    if (!companies.length) {
+    if (
+      requiresSelection &&
+      (!appContext.companyGateSeenInSession || !appContext.activeCompanyId)
+    ) {
       router.replace('/select-company');
       return;
     }
 
-    if (!appContext.companyGateSeenInSession || !appContext.activeCompanyId) {
-      router.replace('/select-company');
-      return;
-    }
-
-    if (!companies.some((company) => company.id === appContext.activeCompanyId)) {
+    if (
+      requiresSelection &&
+      !companies.some((company) => company.id === appContext.activeCompanyId)
+    ) {
       router.replace('/select-company');
     }
   }, [appContext.activeCompanyId, appContext.companyGateSeenInSession, companies, loading, router, user]);
@@ -42,10 +44,11 @@ export function CompanyGate({ children }: { children: React.ReactNode }) {
     return <>{children}</>;
   }
 
+  const requiresSelection = companies.length > 1;
   if (
     pathname !== '/select-company' &&
-    (!companies.length ||
-      !appContext.companyGateSeenInSession ||
+    requiresSelection &&
+    (!appContext.companyGateSeenInSession ||
       !appContext.activeCompanyId ||
       !companies.some((company) => company.id === appContext.activeCompanyId))
   ) {
@@ -54,4 +57,3 @@ export function CompanyGate({ children }: { children: React.ReactNode }) {
 
   return <>{children}</>;
 }
-

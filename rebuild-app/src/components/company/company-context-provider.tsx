@@ -9,7 +9,15 @@ import { applyCompanyTheme } from '@/lib/theme/company-theme';
 
 export function CompanyContextProvider({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
-  const { appContext, setAppContext, companies, setCompanies, setActiveCompany, setMembersByCompany } = useAppState();
+  const {
+    appContext,
+    setAppContext,
+    companies,
+    setCompanies,
+    setActiveCompany,
+    markCompanyGateSeen,
+    setMembersByCompany,
+  } = useAppState();
 
   useEffect(() => {
     if (!user) return;
@@ -47,6 +55,45 @@ export function CompanyContextProvider({ children }: { children: React.ReactNode
       setMembersByCompany((prev) => ({ ...prev, [appContext.activeCompanyId as string]: members }));
     });
   }, [appContext.activeCompanyId, appContext.workspaceId, setMembersByCompany, user]);
+
+  useEffect(() => {
+    if (!user) return;
+
+    if (!companies.length) {
+      if (appContext.activeCompanyId) {
+        setActiveCompany(null);
+      }
+      if (!appContext.companyGateSeenInSession) {
+        markCompanyGateSeen(true);
+      }
+      return;
+    }
+
+    if (companies.length === 1) {
+      const onlyCompanyId = companies[0].id;
+      if (appContext.activeCompanyId !== onlyCompanyId) {
+        setActiveCompany(onlyCompanyId);
+      }
+      if (!appContext.companyGateSeenInSession) {
+        markCompanyGateSeen(true);
+      }
+      return;
+    }
+
+    if (appContext.activeCompanyId && !companies.some((company) => company.id === appContext.activeCompanyId)) {
+      setActiveCompany(null);
+      if (appContext.companyGateSeenInSession) {
+        markCompanyGateSeen(false);
+      }
+    }
+  }, [
+    appContext.activeCompanyId,
+    appContext.companyGateSeenInSession,
+    companies,
+    markCompanyGateSeen,
+    setActiveCompany,
+    user,
+  ]);
 
   useEffect(() => {
     const activeCompany = companies.find((company) => company.id === appContext.activeCompanyId) || null;

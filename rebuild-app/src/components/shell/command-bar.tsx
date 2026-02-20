@@ -119,7 +119,7 @@ export function CommandBar() {
               }}
             >
               <div className="font-medium">{result.title}</div>
-              <div className="text-xs text-[var(--muted)]">{result.kind}{result.subtitle ? ` • ${result.subtitle}` : ''}</div>
+              <div className="text-xs text-[var(--muted)]">{result.kind}{result.subtitle ? ` | ${result.subtitle}` : ''}</div>
             </button>
           ))}
         </div>
@@ -141,4 +141,3 @@ export function CommandBar() {
     </div>
   );
 }
-
