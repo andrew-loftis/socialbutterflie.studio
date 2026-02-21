@@ -59,8 +59,10 @@ export async function handler(event) {
       });
     }
     if (event.httpMethod === 'GET' && path === '/connections') {
+      const groupId = url.searchParams.get('group_id');
       const conns = await listConnections(context);
-      return json(conns);
+      const filtered = groupId ? conns.filter((entry) => String(entry.account_group_id || '') === String(groupId)) : conns;
+      return json(filtered);
     }
     if (event.httpMethod === 'GET' && path === '/workspace/members') {
       if (!authContext.org_id) return json({ items: [] });

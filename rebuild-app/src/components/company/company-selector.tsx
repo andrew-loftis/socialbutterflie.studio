@@ -2,13 +2,14 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ChevronLeft, ChevronRight, Plus, Send } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Copy, Plus, Send } from 'lucide-react';
 import { CompanyTile } from '@/components/company/company-tile';
 import { getSelectorPreset } from '@/components/company/company-selector-presets';
 import { useAppState } from '@/components/shell/app-state';
+import { useAuth } from '@/lib/firebase/auth-provider';
 import { createCompany } from '@/lib/firebase/company-store';
-import { createCompanyInvite, subscribeCompanyInvites } from '@/lib/firebase/invite-store';
-import { subscribeCompanyMembers } from '@/lib/firebase/member-store';
+import { buildInviteUrl, createCompanyInvite, subscribeCompanyInvites } from '@/lib/firebase/invite-store';
+import { subscribeCompanyMembers, updateMemberRole } from '@/lib/firebase/member-store';
 import type { CompanyInvite, CompanyMember, Role } from '@/types/interfaces';
 
 const PAGE_SIZE = 10;
@@ -18,6 +19,7 @@ type Props = {
 };
 
 export function CompanySelector({ nextHref = '/dashboard' }: Props) {
+  const { user } = useAuth();
   const router = useRouter();
   const {
     appContext,
@@ -55,9 +57,14 @@ export function CompanySelector({ nextHref = '/dashboard' }: Props) {
     if (!selectedCompanyId) return;
     const selected = companies.find((company) => company.id === selectedCompanyId);
     if (!selected) return;
-    return subscribeCompanyMembers(appContext.workspaceId, selected.id, (members) => {
-      setMembersByCompany((prev) => ({ ...prev, [selected.id]: members }));
-    });
+    return subscribeCompanyMembers(
+      appContext.workspaceId,
+      selected.id,
+      (members) => {
+        setMembersByCompany((prev) => ({ ...prev, [selected.id]: members }));
+      },
+      (message) => setStatus(message)
+    );
   }, [appContext.workspaceId, companies, selectedCompanyId, setMembersByCompany]);
 
   useEffect(() => {
@@ -65,7 +72,7 @@ export function CompanySelector({ nextHref = '/dashboard' }: Props) {
       setInvites([]);
       return;
     }
-    return subscribeCompanyInvites(appContext.workspaceId, selectedCompanyId, setInvites);
+    return subscribeCompanyInvites(appContext.workspaceId, selectedCompanyId, setInvites, (message) => setStatus(message));
   }, [appContext.workspaceId, selectedCompanyId]);
 
   const selectedCompany = useMemo(
@@ -88,6 +95,7 @@ export function CompanySelector({ nextHref = '/dashboard' }: Props) {
       const company = await createCompany({
         workspaceId: appContext.workspaceId,
         userId: appContext.userId,
+        userEmail: user?.email || undefined,
         name,
         branding: { primary, secondary, accent },
         coverFile,
@@ -129,6 +137,17 @@ export function CompanySelector({ nextHref = '/dashboard' }: Props) {
       setStatus('Invite created and member added as pending.');
     } catch (error) {
       setStatus(error instanceof Error ? error.message : 'Failed to create invite');
+    }
+  }
+
+  async function onUpdateMemberRole(memberId: string, nextRole: Role) {
+    if (!selectedCompanyId) return;
+    setStatus(null);
+    try {
+      await updateMemberRole(appContext.workspaceId, selectedCompanyId, memberId, nextRole);
+      setStatus('Member role updated.');
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : 'Could not update member role');
     }
   }
 
@@ -279,9 +298,46 @@ export function CompanySelector({ nextHref = '/dashboard' }: Props) {
             {(selectedMembers.length ? selectedMembers : []).slice(0, 8).map((member) => (
               <div key={member.id} className="selector-member-row">
                 <span>{member.name || member.email}</span>
-                <span className="badge">{member.role} | {member.status}</span>
+                <div className="flex items-center gap-2">
+                  <select
+                    value={member.role}
+                    onChange={(event) => onUpdateMemberRole(member.id, event.target.value as Role)}
+                    className="h-8 rounded-md border border-[var(--border)] bg-[var(--panel-soft)] px-2 text-xs"
+                  >
+                    <option value="admin">Admin</option>
+                    <option value="editor">Editor</option>
+                    <option value="viewer">Viewer</option>
+                    <option value="client">Client</option>
+                  </select>
+                  <span className="badge">{member.status}</span>
+                </div>
               </div>
             ))}
+            {invites.slice(0, 6).map((invite) => {
+              const inviteUrl = buildInviteUrl(invite.token);
+              return (
+                <div key={invite.id} className="selector-member-row">
+                  <span>{invite.email}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="badge">{invite.role} | {invite.status}</span>
+                    <button
+                      type="button"
+                      className="btn-ghost"
+                      onClick={async () => {
+                        try {
+                          await navigator.clipboard.writeText(inviteUrl);
+                          setStatus(`Invite link copied for ${invite.email}.`);
+                        } catch {
+                          setStatus('Could not copy invite link.');
+                        }
+                      }}
+                    >
+                      <Copy className="h-4 w-4" /> Copy link
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </article>
       </section>

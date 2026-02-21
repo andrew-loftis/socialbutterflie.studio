@@ -130,6 +130,7 @@ export interface CompanyProfile {
 
 export interface CompanyMember {
   id: string;
+  workspaceId?: string;
   companyId: string;
   email: string;
   uid?: string;
@@ -140,6 +141,7 @@ export interface CompanyMember {
   invitedBy: string;
   invitedAt: string;
   joinedAt?: string;
+  inviteToken?: string;
 }
 
 export interface CompanyInvite {

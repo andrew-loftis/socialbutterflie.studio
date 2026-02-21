@@ -1,19 +1,25 @@
 import {
   collection,
+  collectionGroup,
   doc,
   getDoc,
+  getDocs,
   onSnapshot,
+  query,
   setDoc,
   updateDoc,
+  where,
   type Unsubscribe,
 } from 'firebase/firestore';
 import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import { firestore, firebaseStorage } from '@/lib/firebase/client';
-import type { CompanyProfile } from '@/types/interfaces';
+import { mapFirebaseError } from '@/lib/firebase/errors';
+import type { CompanyMember, CompanyProfile } from '@/types/interfaces';
 
 type CreateCompanyInput = {
   workspaceId: string;
   userId: string;
+  userEmail?: string;
   name: string;
   branding: {
     primary: string;
@@ -79,8 +85,12 @@ export async function uploadCompanyCover(workspaceId: string, companyId: string,
   if (!firebaseStorage) return '';
   const path = `workspaces/${workspaceId}/companies/${companyId}/cover/${Date.now()}-${file.name}`;
   const coverRef = ref(firebaseStorage, path);
-  await uploadBytes(coverRef, file);
-  return getDownloadURL(coverRef);
+  try {
+    await uploadBytes(coverRef, file);
+    return getDownloadURL(coverRef);
+  } catch (error) {
+    throw new Error(mapFirebaseError(error, 'storage'));
+  }
 }
 
 export async function createCompany(input: CreateCompanyInput): Promise<CompanyProfile> {
@@ -95,16 +105,86 @@ export async function createCompany(input: CreateCompanyInput): Promise<CompanyP
     return company;
   }
 
-  const companiesRef = collection(firestore, 'workspaces', input.workspaceId, 'companies');
-  await setDoc(doc(companiesRef, company.id), company);
-  return company;
+  try {
+    const companiesRef = collection(firestore, 'workspaces', input.workspaceId, 'companies');
+    await setDoc(doc(companiesRef, company.id), company);
+
+    const now = new Date().toISOString();
+    const member: CompanyMember = {
+      id: input.userId,
+      workspaceId: input.workspaceId,
+      companyId: company.id,
+      email: (input.userEmail || `${input.userId}@local.test`).trim().toLowerCase(),
+      uid: input.userId,
+      name: 'Workspace Owner',
+      role: 'admin',
+      status: 'active',
+      invitedBy: input.userId,
+      invitedAt: now,
+      joinedAt: now,
+    };
+
+    // Critical for authorization + listing: company is only visible to users who have a uid member doc.
+    await setDoc(doc(firestore, 'workspaces', input.workspaceId, 'companies', company.id, 'members', input.userId), member, {
+      merge: true,
+    });
+    return company;
+  } catch (error) {
+    throw new Error(mapFirebaseError(error, 'firestore'));
+  }
+}
+
+export async function bootstrapCompanyCreatorMemberships(input: {
+  workspaceId: string;
+  uid: string;
+  email?: string;
+}) {
+  const fs = firestore;
+  if (!fs) return;
+
+  try {
+    const companiesRef = collection(fs, 'workspaces', input.workspaceId, 'companies');
+    const snap = await getDocs(query(companiesRef, where('createdBy', '==', input.uid)));
+    if (!snap.docs.length) return;
+
+    const now = new Date().toISOString();
+    const email = (input.email || `${input.uid}@local.test`).trim().toLowerCase();
+
+    for (const docSnap of snap.docs) {
+      const company = docSnap.data() as CompanyProfile;
+      const memberRef = doc(fs, 'workspaces', input.workspaceId, 'companies', company.id, 'members', input.uid);
+      const memberSnap = await getDoc(memberRef);
+      if (memberSnap.exists()) continue;
+
+      const member: CompanyMember = {
+        id: input.uid,
+        workspaceId: input.workspaceId,
+        companyId: company.id,
+        email,
+        uid: input.uid,
+        name: 'Workspace Owner',
+        role: 'admin',
+        status: 'active',
+        invitedBy: input.uid,
+        invitedAt: now,
+        joinedAt: now,
+      };
+
+      await setDoc(memberRef, member, { merge: true });
+    }
+  } catch {
+    // Best-effort; subscription will still work for companies that already have memberships.
+  }
 }
 
 export function subscribeCompanies(
   workspaceId: string,
-  callback: (companies: CompanyProfile[]) => void
+  userId: string,
+  callback: (companies: CompanyProfile[]) => void,
+  onError?: (message: string) => void
 ): Unsubscribe {
-  if (!firestore) {
+  const fs = firestore;
+  if (!fs) {
     memoryListeners.add(callback);
     callback([...memoryCompanies].sort((a, b) => a.name.localeCompare(b.name)));
     return () => {
@@ -112,13 +192,76 @@ export function subscribeCompanies(
     };
   }
 
-  const companiesRef = collection(firestore, 'workspaces', workspaceId, 'companies');
-  return onSnapshot(companiesRef, (snapshot) => {
-    const companies = snapshot.docs
-      .map((entry) => entry.data() as CompanyProfile)
-      .sort((a, b) => a.name.localeCompare(b.name));
-    callback(companies);
-  });
+  if (!userId) {
+    callback([]);
+    return () => undefined;
+  }
+
+  const companiesById = new Map<string, CompanyProfile>();
+  const unsubByCompanyId = new Map<string, Unsubscribe>();
+
+  function emit() {
+    callback([...companiesById.values()].sort((a, b) => a.name.localeCompare(b.name)));
+  }
+
+  // List companies through the user's membership docs, not by reading the entire companies collection
+  // (which breaks as soon as there are companies the user is not allowed to read).
+  const membershipQuery = query(
+    collectionGroup(fs, 'members'),
+    where('uid', '==', userId),
+    where('workspaceId', '==', workspaceId),
+    where('status', '==', 'active')
+  );
+
+  const unsubscribeMembership = onSnapshot(
+    membershipQuery,
+    (snapshot) => {
+      const desired = new Set<string>();
+      for (const docSnap of snapshot.docs) {
+        const data = docSnap.data() as Partial<CompanyMember>;
+        if (!data.companyId) continue;
+        desired.add(String(data.companyId));
+      }
+
+      for (const [companyId, unsubscribe] of unsubByCompanyId.entries()) {
+        if (desired.has(companyId)) continue;
+        unsubscribe();
+        unsubByCompanyId.delete(companyId);
+        companiesById.delete(companyId);
+      }
+
+      for (const companyId of desired) {
+        if (unsubByCompanyId.has(companyId)) continue;
+        const companyRef = doc(fs, 'workspaces', workspaceId, 'companies', companyId);
+        const unsub = onSnapshot(
+          companyRef,
+          (companySnap) => {
+            if (!companySnap.exists()) {
+              companiesById.delete(companyId);
+              emit();
+              return;
+            }
+            companiesById.set(companyId, companySnap.data() as CompanyProfile);
+            emit();
+          },
+          (error) => onError?.(mapFirebaseError(error, 'firestore'))
+        );
+        unsubByCompanyId.set(companyId, unsub);
+      }
+
+      emit();
+    },
+    (error) => {
+      onError?.(mapFirebaseError(error, 'firestore'));
+    }
+  );
+
+  return () => {
+    unsubscribeMembership();
+    for (const unsub of unsubByCompanyId.values()) unsub();
+    unsubByCompanyId.clear();
+    companiesById.clear();
+  };
 }
 
 export async function updateCompany(
@@ -139,11 +282,15 @@ export async function updateCompany(
     return;
   }
 
-  const companyRef = doc(firestore, 'workspaces', workspaceId, 'companies', companyId);
-  await updateDoc(companyRef, {
-    ...patch,
-    updatedAt: new Date().toISOString(),
-  });
+  try {
+    const companyRef = doc(firestore, 'workspaces', workspaceId, 'companies', companyId);
+    await updateDoc(companyRef, {
+      ...patch,
+      updatedAt: new Date().toISOString(),
+    });
+  } catch (error) {
+    throw new Error(mapFirebaseError(error, 'firestore'));
+  }
 }
 
 export async function getCompanyById(
@@ -154,10 +301,14 @@ export async function getCompanyById(
     return memoryCompanies.find((company) => company.id === companyId) || null;
   }
 
-  const companyRef = doc(firestore, 'workspaces', workspaceId, 'companies', companyId);
-  const snapshot = await getDoc(companyRef);
-  if (!snapshot.exists()) return null;
-  return snapshot.data() as CompanyProfile;
+  try {
+    const companyRef = doc(firestore, 'workspaces', workspaceId, 'companies', companyId);
+    const snapshot = await getDoc(companyRef);
+    if (!snapshot.exists()) return null;
+    return snapshot.data() as CompanyProfile;
+  } catch {
+    return null;
+  }
 }
 
 export async function setUserCompanyPreference(
@@ -173,16 +324,20 @@ export async function setUserCompanyPreference(
     return;
   }
 
-  const prefRef = doc(firestore, 'users', userId, 'preferences', 'app');
-  await setDoc(
-    prefRef,
-    {
-      lastActiveWorkspaceId: workspaceId,
-      lastActiveCompanyId: companyId,
-      updatedAt: new Date().toISOString(),
-    },
-    { merge: true }
-  );
+  try {
+    const prefRef = doc(firestore, 'users', userId, 'preferences', 'app');
+    await setDoc(
+      prefRef,
+      {
+        lastActiveWorkspaceId: workspaceId,
+        lastActiveCompanyId: companyId,
+        updatedAt: new Date().toISOString(),
+      },
+      { merge: true }
+    );
+  } catch {
+    return;
+  }
 }
 
 export async function getUserCompanyPreference(userId: string) {
@@ -195,15 +350,22 @@ export async function getUserCompanyPreference(userId: string) {
     );
   }
 
-  const prefRef = doc(firestore, 'users', userId, 'preferences', 'app');
-  const snapshot = await getDoc(prefRef);
-  if (!snapshot.exists()) {
+  try {
+    const prefRef = doc(firestore, 'users', userId, 'preferences', 'app');
+    const snapshot = await getDoc(prefRef);
+    if (!snapshot.exists()) {
+      return {
+        lastActiveWorkspaceId: '',
+        lastActiveCompanyId: '',
+      };
+    }
+    return snapshot.data() as { lastActiveWorkspaceId?: string; lastActiveCompanyId?: string };
+  } catch {
     return {
       lastActiveWorkspaceId: '',
       lastActiveCompanyId: '',
     };
   }
-  return snapshot.data() as { lastActiveWorkspaceId?: string; lastActiveCompanyId?: string };
 }
 
 export async function incrementCompanyMemberCount(workspaceId: string, companyId: string, delta: number) {

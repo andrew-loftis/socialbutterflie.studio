@@ -1,0 +1,39 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function accessDoc(workspaceId) {
+      return firestore.get(/databases/(default)/documents/workspaces/$(workspaceId)/user_roles/$(request.auth.uid));
+    }
+
+    function hasAccess(workspaceId) {
+      return signedIn() && accessDoc(workspaceId).data.status == 'active';
+    }
+
+    function roleRank(role) {
+      return role == 'admin'
+        ? 4
+        : role == 'editor'
+          ? 3
+          : role == 'viewer'
+            ? 2
+            : role == 'client'
+              ? 1
+              : 0;
+    }
+
+    match /workspaces/{workspaceId}/{allPaths=**} {
+      allow read: if hasAccess(workspaceId) && roleRank(accessDoc(workspaceId).data.workspaceRole) >= 1;
+      allow write: if hasAccess(workspaceId) && roleRank(accessDoc(workspaceId).data.workspaceRole) >= 3;
+    }
+
+    // Personal profile images.
+    match /users/{uid}/{allPaths=**} {
+      allow read: if signedIn();
+      allow write: if signedIn() && request.auth.uid == uid;
+    }
+  }
+}

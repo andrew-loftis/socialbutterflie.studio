@@ -1,6 +1,7 @@
 import { collection, doc, getDoc, onSnapshot, setDoc, updateDoc, type Unsubscribe } from 'firebase/firestore';
 import { firestore } from '@/lib/firebase/client';
 import { incrementCompanyMemberCount } from '@/lib/firebase/company-store';
+import { mapFirebaseError } from '@/lib/firebase/errors';
 import type { CompanyMember, Role } from '@/types/interfaces';
 
 const memoryMembers: Record<string, CompanyMember[]> = {};
@@ -21,7 +22,8 @@ function notify(workspaceId: string, companyId: string) {
 export function subscribeCompanyMembers(
   workspaceId: string,
   companyId: string,
-  callback: (members: CompanyMember[]) => void
+  callback: (members: CompanyMember[]) => void,
+  onError?: (message: string) => void
 ): Unsubscribe {
   if (!firestore) {
     const key = companyKey(workspaceId, companyId);
@@ -37,12 +39,39 @@ export function subscribeCompanyMembers(
   }
 
   const membersRef = collection(firestore, 'workspaces', workspaceId, 'companies', companyId, 'members');
-  return onSnapshot(membersRef, (snapshot) => {
-    const members = snapshot.docs
-      .map((entry) => entry.data() as CompanyMember)
-      .sort((a, b) => a.email.localeCompare(b.email));
-    callback(members);
-  });
+  return onSnapshot(
+    membersRef,
+    (snapshot) => {
+      const raw = snapshot.docs.map((entry) => entry.data() as CompanyMember);
+      // When invites create pending members (email-* ids) and acceptance creates an active uid member,
+      // dedupe by email and prefer the active/uid entry.
+      const byEmail = new Map<string, CompanyMember>();
+      for (const member of raw) {
+        const key = (member.email || '').trim().toLowerCase();
+        if (!key) continue;
+        const existing = byEmail.get(key);
+        if (!existing) {
+          byEmail.set(key, member);
+          continue;
+        }
+        const existingScore = existing.status === 'active' ? 2 : existing.status === 'pending' ? 1 : 0;
+        const nextScore = member.status === 'active' ? 2 : member.status === 'pending' ? 1 : 0;
+        if (nextScore > existingScore) {
+          byEmail.set(key, member);
+          continue;
+        }
+        if (nextScore === existingScore && member.uid && !existing.uid) {
+          byEmail.set(key, member);
+        }
+      }
+
+      const members = Array.from(byEmail.values()).sort((a, b) => a.email.localeCompare(b.email));
+      callback(members);
+    },
+    (error) => {
+      onError?.(mapFirebaseError(error, 'firestore'));
+    }
+  );
 }
 
 export async function addPendingMember(
@@ -55,6 +84,7 @@ export async function addPendingMember(
   const memberId = `email-${normalizedEmail.replace(/[^a-z0-9]+/g, '-')}`;
   const member: CompanyMember = {
     id: memberId,
+    workspaceId,
     companyId,
     email: normalizedEmail,
     role: input.role,
@@ -75,13 +105,17 @@ export async function addPendingMember(
     return member;
   }
 
-  const memberRef = doc(firestore, 'workspaces', workspaceId, 'companies', companyId, 'members', member.id);
-  const existing = await getDoc(memberRef);
-  await setDoc(memberRef, member, { merge: true });
-  if (!existing.exists()) {
-    await incrementCompanyMemberCount(workspaceId, companyId, 1);
+  try {
+    const memberRef = doc(firestore, 'workspaces', workspaceId, 'companies', companyId, 'members', member.id);
+    const existing = await getDoc(memberRef);
+    await setDoc(memberRef, member, { merge: true });
+    if (!existing.exists()) {
+      await incrementCompanyMemberCount(workspaceId, companyId, 1);
+    }
+    return member;
+  } catch (error) {
+    throw new Error(mapFirebaseError(error, 'firestore'));
   }
-  return member;
 }
 
 export async function activateMemberByEmail(
@@ -89,7 +123,8 @@ export async function activateMemberByEmail(
   companyId: string,
   email: string,
   uid: string,
-  name?: string
+  name?: string,
+  role: Role = 'viewer'
 ) {
   if (!firestore) {
     const key = companyKey(workspaceId, companyId);
@@ -99,6 +134,7 @@ export async function activateMemberByEmail(
       existing[index] = {
         ...existing[index],
         status: 'active',
+        role,
         uid,
         name: name || existing[index].name || '',
         joinedAt: new Date().toISOString(),
@@ -108,22 +144,29 @@ export async function activateMemberByEmail(
     return;
   }
 
-  const membersRef = collection(firestore, 'workspaces', workspaceId, 'companies', companyId, 'members');
-  const memberId = `email-${email.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
-  const memberRef = doc(membersRef, memberId);
-  await setDoc(
-    memberRef,
-    {
-      id: memberId,
-      companyId,
-      email: email.toLowerCase(),
-      uid,
-      name: name || '',
-      status: 'active',
-      joinedAt: new Date().toISOString(),
-    },
-    { merge: true }
-  );
+  try {
+    // Use uid-based member doc for authorization + company listing.
+    const memberRef = doc(firestore, 'workspaces', workspaceId, 'companies', companyId, 'members', uid);
+    await setDoc(
+      memberRef,
+      {
+        id: uid,
+        workspaceId,
+        companyId,
+        email: email.toLowerCase(),
+        uid,
+        name: name || '',
+        role,
+        status: 'active',
+        invitedBy: uid,
+        invitedAt: new Date().toISOString(),
+        joinedAt: new Date().toISOString(),
+      } satisfies CompanyMember,
+      { merge: true }
+    );
+  } catch (error) {
+    throw new Error(mapFirebaseError(error, 'firestore'));
+  }
 }
 
 export async function updateMemberRole(
@@ -143,6 +186,10 @@ export async function updateMemberRole(
     return;
   }
 
-  const memberRef = doc(firestore, 'workspaces', workspaceId, 'companies', companyId, 'members', memberId);
-  await updateDoc(memberRef, { role });
+  try {
+    const memberRef = doc(firestore, 'workspaces', workspaceId, 'companies', companyId, 'members', memberId);
+    await updateDoc(memberRef, { role });
+  } catch (error) {
+    throw new Error(mapFirebaseError(error, 'firestore'));
+  }
 }

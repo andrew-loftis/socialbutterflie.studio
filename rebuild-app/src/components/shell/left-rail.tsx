@@ -56,7 +56,14 @@ export function LeftRail() {
       {/* Footer: user + collapse toggle */}
       <div className="rail-footer">
         <Link href="/profile" className="rail-user" title={collapsed ? (user?.displayName ?? user?.email ?? 'Profile') : undefined}>
-          <div className="rail-user-avatar">{initials}</div>
+          <div className="rail-user-avatar" style={{ overflow: 'hidden' }}>
+            {user?.photoURL ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={user.photoURL} alt={user.displayName || user.email || 'Profile'} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            ) : (
+              initials
+            )}
+          </div>
           <div className="rail-user-info">
             <span className="rail-user-name">{user?.displayName ?? 'Account'}</span>
             <span className="rail-user-email">{user?.email ?? ''}</span>
@@ -81,5 +88,4 @@ export function LeftRail() {
     </aside>
   );
 }
-
 

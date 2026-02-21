@@ -5,13 +5,17 @@ import { useState } from 'react';
 import { CalendarDays, Heart, ImagePlus, MessageCircle, MoreHorizontal, Send, Share2, Sparkles, WandSparkles } from 'lucide-react';
 
 import { PageHeader } from '@/components/ui/page-header';
+import { useAppState } from '@/components/shell/app-state';
 import { useActiveCompany } from '@/lib/hooks/use-active-company';
 import { useCompanyAssets } from '@/lib/hooks/use-company-assets';
+import { useAuth } from '@/lib/firebase/auth-provider';
 
 const PLATFORMS = ['Instagram', 'Facebook', 'LinkedIn', 'TikTok'] as const;
 type Platform = typeof PLATFORMS[number];
 
 export default function BuildPage() {
+  const { user } = useAuth();
+  const { appContext } = useAppState();
   const { activeCompany } = useActiveCompany();
   const { assets } = useCompanyAssets();
 
@@ -19,6 +23,71 @@ export default function BuildPage() {
   const [caption, setCaption] = useState('');
   const [campaign, setCampaign] = useState('');
   const [scheduleAt, setScheduleAt] = useState('');
+  const [mediaUrl, setMediaUrl] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [status, setStatus] = useState<string | null>(null);
+
+  const providerMap: Record<Platform, 'instagram' | 'facebook' | 'tiktok' | null> = {
+    Instagram: 'instagram',
+    Facebook: 'facebook',
+    TikTok: 'tiktok',
+    LinkedIn: null,
+  };
+
+  async function submitPost(workflowStatus: 'draft' | 'review' | 'pending') {
+    const provider = providerMap[platform];
+    if (!provider) {
+      setStatus(`${platform} scheduling is not wired yet. Connect Instagram/Facebook/TikTok for now.`);
+      return;
+    }
+    if (!user?.uid) {
+      setStatus('Sign in to schedule posts.');
+      return;
+    }
+    if (!mediaUrl.trim()) {
+      setStatus('Media URL is required for scheduling.');
+      return;
+    }
+    if (workflowStatus === 'pending' && !scheduleAt) {
+      setStatus('Schedule time is required.');
+      return;
+    }
+    setSaving(true);
+    setStatus(null);
+    try {
+      const when = workflowStatus === 'pending'
+        ? new Date(scheduleAt).toISOString()
+        : new Date(Date.now() + 5 * 60 * 1000).toISOString();
+      const res = await fetch('/.netlify/functions/api?path=/schedule', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: user.uid,
+          org_id: appContext.workspaceId,
+          provider,
+          caption,
+          mediaUrl: mediaUrl.trim(),
+          when,
+          workflowStatus,
+          campaignId: campaign || undefined,
+        }),
+      });
+      if (!res.ok) {
+        throw new Error(await res.text());
+      }
+      setStatus(
+        workflowStatus === 'draft'
+          ? 'Saved as draft.'
+          : workflowStatus === 'review'
+            ? 'Submitted for review.'
+            : 'Post scheduled.'
+      );
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : 'Failed to save post.');
+    } finally {
+      setSaving(false);
+    }
+  }
 
   if (!activeCompany) {
     return (
@@ -40,7 +109,7 @@ export default function BuildPage() {
             <button className="btn-ghost btn-sm" type="button">
               <Sparkles className="h-3.5 w-3.5" /> AI assist
             </button>
-            <button className="btn-primary btn-sm" type="button">
+            <button className="btn-primary btn-sm" type="button" onClick={() => submitPost('pending')} disabled={saving}>
               <CalendarDays className="h-3.5 w-3.5" /> Schedule Post
             </button>
           </>
@@ -92,6 +161,15 @@ export default function BuildPage() {
             </label>
           </div>
 
+          <label style={{ display: 'flex', flexDirection: 'column', gap: 6, position: 'relative', zIndex: 1 }}>
+            <span style={{ fontSize: '0.78rem', color: 'var(--muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Media URL</span>
+            <input
+              placeholder="https://.../image-or-video.jpg"
+              value={mediaUrl}
+              onChange={(e) => setMediaUrl(e.target.value)}
+            />
+          </label>
+
           {/* Upload zone */}
           <div
             className="upload-zone"
@@ -108,12 +186,13 @@ export default function BuildPage() {
 
           {/* Action row */}
           <div className="button-row" style={{ position: 'relative', zIndex: 1 }}>
-            <button className="btn-ghost" type="button">Save draft</button>
-            <button className="btn-ghost" type="button">Submit for review</button>
-            <button className="btn-primary" type="button">
+            <button className="btn-ghost" type="button" onClick={() => submitPost('draft')} disabled={saving}>Save draft</button>
+            <button className="btn-ghost" type="button" onClick={() => submitPost('review')} disabled={saving}>Submit for review</button>
+            <button className="btn-primary" type="button" onClick={() => submitPost('pending')} disabled={saving}>
               <Send className="h-3.5 w-3.5" /> Schedule Post
             </button>
           </div>
+          {status ? <p className="text-sm text-[var(--muted)]">{status}</p> : null}
         </section>
 
         {/* ── Phone simulator ── */}
@@ -189,4 +268,3 @@ export default function BuildPage() {
     </div>
   );
 }
-

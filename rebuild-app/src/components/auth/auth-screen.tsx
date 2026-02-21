@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import { Lock, Mail } from 'lucide-react';
-import { useAuth } from '@/lib/firebase/auth-provider';
+import { type OAuthProviderId, useAuth } from '@/lib/firebase/auth-provider';
+import { mapFirebaseError } from '@/lib/firebase/errors';
 
 type AuthMode = 'signin' | 'signup';
 
@@ -17,13 +18,20 @@ export function AuthScreen({
   title = 'Welcome to SocialButterflie',
   subtitle = 'Create your account to start building your brand system.',
 }: AuthScreenProps) {
-  const { signInEmail, signUpEmail, signInGoogle } = useAuth();
+  const { signInEmail, signUpEmail, signInOAuth } = useAuth();
   const [mode, setMode] = useState<AuthMode>(defaultMode);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  const oauthButtons: Array<{ provider: OAuthProviderId; label: string }> = [
+    { provider: 'google', label: 'Continue with Google' },
+    { provider: 'microsoft', label: 'Continue with Microsoft' },
+    { provider: 'github', label: 'Continue with GitHub' },
+    { provider: 'apple', label: 'Continue with Apple' },
+  ];
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-[var(--bg)] px-4 py-10">
@@ -67,7 +75,7 @@ export function AuthScreen({
                 await signInEmail(email, password);
               }
             } catch (err) {
-              setError(err instanceof Error ? err.message : 'Authentication failed');
+              setError(mapFirebaseError(err, 'auth'));
             } finally {
               setSubmitting(false);
             }
@@ -129,16 +137,20 @@ export function AuthScreen({
             {mode === 'signup' ? 'Create account' : 'Sign in'}
           </button>
 
-          <button
-            className="h-10 w-full rounded-xl border border-[var(--border)] bg-[var(--panel-soft)] text-sm"
-            type="button"
-            onClick={() => signInGoogle().catch((err) => setError(err instanceof Error ? err.message : 'Unable to sign in'))}
-          >
-            Continue with Google
-          </button>
+          <div className="space-y-2">
+            {oauthButtons.map((entry) => (
+              <button
+                key={entry.provider}
+                className="h-10 w-full rounded-xl border border-[var(--border)] bg-[var(--panel-soft)] text-sm"
+                type="button"
+                onClick={() => signInOAuth(entry.provider).catch((err) => setError(mapFirebaseError(err, 'auth')))}
+              >
+                {entry.label}
+              </button>
+            ))}
+          </div>
         </form>
       </div>
     </div>
   );
 }
-

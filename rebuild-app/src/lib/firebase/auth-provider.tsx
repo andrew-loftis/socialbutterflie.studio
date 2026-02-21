@@ -9,7 +9,9 @@ import {
 } from 'react';
 import {
   createUserWithEmailAndPassword,
+  GithubAuthProvider,
   GoogleAuthProvider,
+  OAuthProvider,
   User,
   onAuthStateChanged,
   signInWithEmailAndPassword,
@@ -18,13 +20,15 @@ import {
 } from 'firebase/auth';
 import { firebaseAuth, hasFirebaseClientConfig } from '@/lib/firebase/client';
 
+export type OAuthProviderId = 'google' | 'github' | 'microsoft' | 'apple';
+
 type AuthState = {
   user: User | null;
   loading: boolean;
   token: string | null;
   signInEmail: (email: string, password: string) => Promise<void>;
   signUpEmail: (email: string, password: string) => Promise<void>;
-  signInGoogle: () => Promise<void>;
+  signInOAuth: (provider: OAuthProviderId) => Promise<void>;
   logout: () => Promise<void>;
 };
 
@@ -58,9 +62,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (!firebaseAuth) throw new Error('Firebase Auth is not configured');
         await createUserWithEmailAndPassword(firebaseAuth, email, password);
       },
-      signInGoogle: async () => {
+      signInOAuth: async (providerId: OAuthProviderId) => {
         if (!firebaseAuth) throw new Error('Firebase Auth is not configured');
-        await signInWithPopup(firebaseAuth, new GoogleAuthProvider());
+        const provider =
+          providerId === 'google'
+            ? new GoogleAuthProvider()
+            : providerId === 'github'
+              ? new GithubAuthProvider()
+              : new OAuthProvider(providerId === 'microsoft' ? 'microsoft.com' : 'apple.com');
+        await signInWithPopup(firebaseAuth, provider);
       },
       logout: async () => {
         if (!firebaseAuth) return;

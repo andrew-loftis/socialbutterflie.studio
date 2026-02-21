@@ -1,0 +1,219 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function uid() {
+      return request.auth.uid;
+    }
+
+    function authEmail() {
+      return signedIn() && request.auth.token.email != null
+        ? request.auth.token.email.lower()
+        : '';
+    }
+
+    function accessDocPath(workspaceId) {
+      return /databases/$(database)/documents/workspaces/$(workspaceId)/user_roles/$(uid());
+    }
+
+    function hasAccessDoc(workspaceId) {
+      return signedIn() && exists(accessDocPath(workspaceId));
+    }
+
+    function isActiveWorkspaceMember(workspaceId) {
+      return hasAccessDoc(workspaceId) && get(accessDocPath(workspaceId)).data.status == 'active';
+    }
+
+    function workspaceRole(workspaceId) {
+      return hasAccessDoc(workspaceId) ? get(accessDocPath(workspaceId)).data.workspaceRole : '';
+    }
+
+    function roleRank(role) {
+      return role == 'admin'
+        ? 4
+        : role == 'editor'
+          ? 3
+          : role == 'viewer'
+            ? 2
+            : role == 'client'
+              ? 1
+              : 0;
+    }
+
+    function memberDocPath(workspaceId, companyId, memberId) {
+      return /databases/$(database)/documents/workspaces/$(workspaceId)/companies/$(companyId)/members/$(memberId);
+    }
+
+    function hasMemberDoc(workspaceId, companyId) {
+      return signedIn() && exists(memberDocPath(workspaceId, companyId, uid()));
+    }
+
+    function memberData(workspaceId, companyId) {
+      return get(memberDocPath(workspaceId, companyId, uid())).data;
+    }
+
+    function memberRole(workspaceId, companyId) {
+      return hasMemberDoc(workspaceId, companyId) ? memberData(workspaceId, companyId).role : '';
+    }
+
+    function isActiveMember(workspaceId, companyId) {
+      return isActiveWorkspaceMember(workspaceId)
+        && hasMemberDoc(workspaceId, companyId)
+        && memberData(workspaceId, companyId).status == 'active';
+    }
+
+    function canReadCompany(workspaceId, companyId) {
+      return isActiveMember(workspaceId, companyId) && roleRank(memberRole(workspaceId, companyId)) >= 1;
+    }
+
+    function canEditCompany(workspaceId, companyId) {
+      return isActiveMember(workspaceId, companyId) && roleRank(memberRole(workspaceId, companyId)) >= 3;
+    }
+
+    function canManageCompany(workspaceId, companyId) {
+      return isActiveMember(workspaceId, companyId) && roleRank(memberRole(workspaceId, companyId)) >= 4;
+    }
+
+    function isWorkspaceAdmin(workspaceId) {
+      return isActiveWorkspaceMember(workspaceId) && roleRank(workspaceRole(workspaceId)) >= 4;
+    }
+
+    match /workspaces/{workspaceId} {
+      allow read: if isActiveWorkspaceMember(workspaceId);
+      allow create: if signedIn();
+      allow update, delete: if isWorkspaceAdmin(workspaceId);
+
+      match /user_roles/{uid} {
+        allow read: if isActiveWorkspaceMember(workspaceId) || (signedIn() && uid() == uid);
+        allow create: if signedIn()
+          && uid() == uid
+          && request.resource.data.uid == uid
+          && request.resource.data.status == 'active';
+        // Workspace roles are admin-managed. Users create their own doc via ensureWorkspaceUserAccess.
+        allow update, delete: if isWorkspaceAdmin(workspaceId);
+      }
+
+      match /companies/{companyId} {
+        allow read: if canReadCompany(workspaceId, companyId) || (signedIn() && resource.data.createdBy == uid());
+        allow create: if signedIn() && request.resource.data.createdBy == uid() && request.resource.data.workspaceId == workspaceId;
+        allow update: if canEditCompany(workspaceId, companyId);
+        allow delete: if canManageCompany(workspaceId, companyId);
+
+        match /members/{memberId} {
+          allow read: if canReadCompany(workspaceId, companyId);
+
+          // Allow the company creator to bootstrap their own admin membership immediately after creating the company.
+          allow create: if signedIn()
+            && memberId == uid()
+            && request.resource.data.uid == uid()
+            && request.resource.data.companyId == companyId
+            && request.resource.data.workspaceId == workspaceId
+            && request.resource.data.status == 'active'
+            && request.resource.data.role == 'admin'
+            && get(/databases/$(database)/documents/workspaces/$(workspaceId)/companies/$(companyId)).data.createdBy == uid();
+
+          // Allow invited users to accept an invite by creating their own uid membership doc.
+          // Client must include request.resource.data.inviteToken matching /invite_tokens/{token}.
+          allow create: if signedIn()
+            && memberId == uid()
+            && request.resource.data.uid == uid()
+            && request.resource.data.companyId == companyId
+            && request.resource.data.workspaceId == workspaceId
+            && request.resource.data.status == 'active'
+            && request.resource.data.inviteToken is string
+            && exists(/databases/$(database)/documents/invite_tokens/$(request.resource.data.inviteToken))
+            && get(/databases/$(database)/documents/invite_tokens/$(request.resource.data.inviteToken)).data.status == 'pending'
+            && get(/databases/$(database)/documents/invite_tokens/$(request.resource.data.inviteToken)).data.workspaceId == workspaceId
+            && get(/databases/$(database)/documents/invite_tokens/$(request.resource.data.inviteToken)).data.companyId == companyId
+            && get(/databases/$(database)/documents/invite_tokens/$(request.resource.data.inviteToken)).data.email == authEmail()
+            && request.resource.data.email == authEmail()
+            && request.resource.data.role == get(/databases/$(database)/documents/invite_tokens/$(request.resource.data.inviteToken)).data.role;
+
+          allow update, delete: if canManageCompany(workspaceId, companyId);
+        }
+
+        match /invites/{inviteId} {
+          allow read: if canReadCompany(workspaceId, companyId);
+          allow create, delete: if canManageCompany(workspaceId, companyId);
+
+          // Invited user can mark their token-id invite as accepted/expired (limited patch).
+          allow update: if canManageCompany(workspaceId, companyId)
+            || (signedIn()
+              && inviteId == request.resource.data.token
+              && resource.data.email == authEmail()
+              && request.resource.data.email == resource.data.email
+              && request.resource.data.role == resource.data.role
+              && request.resource.data.companyId == resource.data.companyId
+              && request.resource.data.expiresAt == resource.data.expiresAt
+              && request.resource.data.createdAt == resource.data.createdAt
+              && request.resource.data.createdBy == resource.data.createdBy
+              && (
+                (resource.data.status == 'pending' && request.resource.data.status == 'accepted' && request.resource.data.acceptedByUid == uid())
+                || (resource.data.status == 'pending' && request.resource.data.status == 'expired')
+              )
+            );
+        }
+
+        match /{document=**} {
+          allow read: if canReadCompany(workspaceId, companyId);
+          allow write: if canEditCompany(workspaceId, companyId);
+        }
+      }
+
+      match /generationJobs/{jobId} {
+        allow read: if isActiveWorkspaceMember(workspaceId);
+        allow create, update, delete: if roleRank(workspaceRole(workspaceId)) >= 3;
+      }
+
+      match /usageMeters/{meterId} {
+        allow read: if isActiveWorkspaceMember(workspaceId);
+        allow create, update, delete: if roleRank(workspaceRole(workspaceId)) >= 3;
+      }
+    }
+
+    match /users/{userId} {
+      allow read: if signedIn() && request.auth.uid == userId;
+      allow create, update, delete: if signedIn() && request.auth.uid == userId;
+
+      match /{document=**} {
+        allow read: if signedIn() && request.auth.uid == userId;
+        allow write: if signedIn() && request.auth.uid == userId;
+      }
+    }
+
+    // Token mirror used for accepting invites without having company read access yet.
+    match /invite_tokens/{token} {
+      allow read: if signedIn() && resource.data.email == authEmail();
+
+      // Only company admins should create/revoke tokens.
+      allow create, delete: if signedIn()
+        && request.resource.data.workspaceId is string
+        && request.resource.data.companyId is string
+        && canManageCompany(request.resource.data.workspaceId, request.resource.data.companyId);
+
+      // Invited user can mark accepted/expired (limited patch), admins can update freely.
+      allow update: if signedIn()
+        && (
+          canManageCompany(resource.data.workspaceId, resource.data.companyId)
+          || (
+            resource.data.email == authEmail()
+            && request.resource.data.email == resource.data.email
+            && request.resource.data.role == resource.data.role
+            && request.resource.data.workspaceId == resource.data.workspaceId
+            && request.resource.data.companyId == resource.data.companyId
+            && request.resource.data.token == resource.data.token
+            && request.resource.data.expiresAt == resource.data.expiresAt
+            && request.resource.data.createdAt == resource.data.createdAt
+            && request.resource.data.createdBy == resource.data.createdBy
+            && (
+              (resource.data.status == 'pending' && request.resource.data.status == 'accepted' && request.resource.data.acceptedByUid == uid())
+              || (resource.data.status == 'pending' && request.resource.data.status == 'expired')
+            )
+          )
+        );
+    }
+  }
+}

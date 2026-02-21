@@ -1,14 +1,16 @@
 "use client";
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuth } from '@/lib/firebase/auth-provider';
-import { getUserCompanyPreference, setUserCompanyPreference, subscribeCompanies } from '@/lib/firebase/company-store';
+import { bootstrapCompanyCreatorMemberships, getUserCompanyPreference, setUserCompanyPreference, subscribeCompanies } from '@/lib/firebase/company-store';
 import { subscribeCompanyMembers } from '@/lib/firebase/member-store';
+import { ensureWorkspaceUserAccess } from '@/lib/firebase/workspace-access-store';
 import { useAppState } from '@/components/shell/app-state';
 import { applyCompanyTheme } from '@/lib/theme/company-theme';
 
 export function CompanyContextProvider({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
+  const [accessReady, setAccessReady] = useState(false);
   const {
     appContext,
     setAppContext,
@@ -44,9 +46,42 @@ export function CompanyContextProvider({ children }: { children: React.ReactNode
   }, [setActiveCompany, setAppContext, user]);
 
   useEffect(() => {
-    if (!user || loading) return;
-    return subscribeCompanies(appContext.workspaceId, (next) => setCompanies(next));
-  }, [appContext.workspaceId, loading, setCompanies, user]);
+    if (!user || loading) {
+      setAccessReady(false);
+      return;
+    }
+    let active = true;
+    ensureWorkspaceUserAccess({
+      workspaceId: appContext.workspaceId,
+      uid: user.uid,
+      email: user.email || `${user.uid}@local.test`,
+    })
+      .then(() => {
+        if (active) setAccessReady(true);
+      })
+      .catch(() => {
+        if (active) setAccessReady(true);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [appContext.workspaceId, loading, user]);
+
+  useEffect(() => {
+    if (!user || loading || !accessReady) return;
+    // Backfill memberships for older company docs created before membership-based listing was introduced.
+    bootstrapCompanyCreatorMemberships({
+      workspaceId: appContext.workspaceId,
+      uid: user.uid,
+      email: user.email || undefined,
+    }).catch(() => undefined);
+    return subscribeCompanies(appContext.workspaceId, user.uid, (next) => setCompanies(next), (message) => {
+      // Surface Firestore permission/config issues during development; production UI can wire this into a toast.
+      console.warn('[companies] subscribe failed:', message);
+      setCompanies([]);
+    });
+  }, [accessReady, appContext.workspaceId, loading, setCompanies, user]);
 
   useEffect(() => {
     if (!user || !appContext.activeCompanyId) return;
