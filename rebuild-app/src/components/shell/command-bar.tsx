@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Command, Search, Sparkles } from 'lucide-react';
+import { ChevronDown, Command, Plus, Search, Sparkles } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useAppState } from '@/components/shell/app-state';
 
@@ -17,127 +17,132 @@ type SearchResult = {
 export function CommandBar() {
   const router = useRouter();
   const pathname = usePathname();
-  const { appContext, companies, setActiveCompany, markCompanyGateSeen } = useAppState();
+  const { appContext, companies } = useAppState();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<SearchResult[]>([]);
   const [open, setOpen] = useState(false);
 
   const activeCompany = useMemo(
-    () => companies.find((company) => company.id === appContext.activeCompanyId) || null,
-    [appContext.activeCompanyId, companies]
+    () => companies.find((c) => c.id === appContext.activeCompanyId) ?? null,
+    [appContext.activeCompanyId, companies],
   );
 
+  // ⌘K / / shortcut
   useEffect(() => {
-    const handle = (event: KeyboardEvent) => {
-      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
-        event.preventDefault();
-        setOpen((prev) => !prev);
-      }
-      if (!open && event.key === '/') {
-        event.preventDefault();
-        setOpen(true);
+    const handle = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setOpen((v) => !v);
       }
     };
     window.addEventListener('keydown', handle);
     return () => window.removeEventListener('keydown', handle);
-  }, [open]);
+  }, []);
 
+  // Live search
   useEffect(() => {
-    if (!query.trim()) return;
-
-    const timeout = setTimeout(async () => {
+    if (!query.trim()) { setResults([]); return; }
+    const t = setTimeout(async () => {
       const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
       const data = (await res.json()) as { data?: SearchResult[] };
-      setResults(data.data || []);
+      setResults(data.data ?? []);
     }, 160);
-
-    return () => clearTimeout(timeout);
+    return () => clearTimeout(t);
   }, [query]);
 
   return (
-    <div className="command-bar">
-      <div className="flex flex-wrap items-center gap-2">
-        <div className="relative min-w-[260px] flex-1">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--muted)]" />
+    <header className="command-bar">
+      <div className="command-bar-inner">
+        {/* Search */}
+        <div className="search-wrap">
+          <span className="search-icon">
+            <Search className="h-4 w-4" />
+          </span>
           <input
-            className="h-10 w-full rounded-xl border border-[var(--border)] bg-[var(--panel-soft)] pl-9 pr-14 text-sm outline-none"
-            placeholder="Search companies, entities, commands..."
+            className="search-input"
+            placeholder="Search or jump to…"
             value={query}
-            onChange={(event) => {
-              setQuery(event.target.value);
-              if (!event.target.value.trim()) setResults([]);
+            onChange={(e) => {
+              setQuery(e.target.value);
+              if (!e.target.value.trim()) setResults([]);
               setOpen(true);
             }}
+            onFocus={() => setOpen(true)}
+            onBlur={() => setTimeout(() => setOpen(false), 180)}
           />
-          <div className="pointer-events-none absolute right-2 top-1/2 flex -translate-y-1/2 items-center gap-1 rounded-md border border-[var(--border)] bg-[var(--panel)] px-1.5 py-0.5 text-[10px] text-[var(--muted)]">
+          <span className="search-kbd">
             <Command className="h-3 w-3" />K
-          </div>
-        </div>
+          </span>
 
-        <select
-          className="h-10 min-w-[220px] rounded-xl border border-[var(--border)] bg-[var(--panel-soft)] px-3 text-sm"
-          value={appContext.activeCompanyId || ''}
-          onChange={(event) => {
-            const companyId = event.target.value || null;
-            setActiveCompany(companyId);
-            markCompanyGateSeen(Boolean(companyId));
-          }}
-        >
-          <option value="" disabled>
-            {companies.length ? 'Select company' : 'No companies yet'}
-          </option>
-          {companies.map((company) => (
-            <option key={company.id} value={company.id}>
-              {company.name}
-            </option>
-          ))}
-        </select>
-
-        <div className="flex items-center gap-2">
-          <button
-            className="btn-ghost"
-            type="button"
-            onClick={() => router.push(`/select-company?next=${encodeURIComponent(pathname)}`)}
-          >
-            Switch Company
-          </button>
-          <Link href="/build" className="btn-primary">New Post</Link>
-          <Link href="/studio" className="btn-ghost">AI Studio</Link>
-        </div>
-      </div>
-
-      {open && results.length > 0 ? (
-        <div className="mt-2 rounded-xl border border-[var(--border)] bg-[var(--panel-soft)] p-1">
-          {results.map((result) => (
-            <button
-              key={`${result.kind}-${result.id}`}
-              className="block w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-[var(--panel)]"
-              type="button"
-              onClick={() => {
-                router.push(result.href);
-                setOpen(false);
+          {/* Dropdown results */}
+          {open && results.length > 0 && (
+            <div
+              style={{
+                position: 'absolute',
+                top: 'calc(100% + 6px)',
+                left: 0,
+                right: 0,
+                zIndex: 60,
+                borderRadius: 12,
+                border: '1px solid var(--border)',
+                background: 'var(--panel-strong)',
+                backdropFilter: 'blur(20px)',
+                padding: 4,
+                boxShadow: 'var(--shadow-3)',
               }}
             >
-              <div className="font-medium">{result.title}</div>
-              <div className="text-xs text-[var(--muted)]">{result.kind}{result.subtitle ? ` | ${result.subtitle}` : ''}</div>
-            </button>
-          ))}
+              {results.map((r) => (
+                <button
+                  key={`${r.kind}-${r.id}`}
+                  type="button"
+                  style={{
+                    display: 'block',
+                    width: '100%',
+                    borderRadius: 8,
+                    padding: '8px 12px',
+                    textAlign: 'left',
+                    background: 'transparent',
+                    border: 'none',
+                    cursor: 'pointer',
+                    transition: 'background 0.14s',
+                  }}
+                  onMouseOver={(e) => { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.05)'; }}
+                  onMouseOut={(e)  => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
+                  onClick={() => { router.push(r.href); setOpen(false); }}
+                >
+                  <div style={{ fontSize: '0.84rem', fontWeight: 500, color: 'var(--text)' }}>{r.title}</div>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--muted)' }}>{r.kind}{r.subtitle ? ` · ${r.subtitle}` : ''}</div>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
-      ) : null}
 
-      {open && !results.length && query.trim() ? (
-        <div className="mt-2 rounded-xl border border-dashed border-[var(--border)] px-3 py-4 text-sm text-[var(--muted)]">
-          {`No matching entity for "${query}".`}
+        {/* Company switcher pill */}
+        <button
+          type="button"
+          className="company-pill"
+          onClick={() => {
+            router.push(`/select-company?next=${encodeURIComponent(pathname)}`);
+          }}
+        >
+          <span className="company-pill-dot" />
+          <span>{activeCompany?.name ?? 'Select company'}</span>
+          <ChevronDown className="company-pill-chevron h-3.5 w-3.5" />
+        </button>
+
+        {/* Primary actions */}
+        <div className="topbar-actions">
+          <Link href="/studio" className="btn-ghost btn-sm" style={{ gap: 5 }}>
+            <Sparkles className="h-3.5 w-3.5" />
+            AI Studio
+          </Link>
+          <Link href="/build" className="btn-primary btn-sm" style={{ gap: 5 }}>
+            <Plus className="h-3.5 w-3.5" />
+            New Post
+          </Link>
         </div>
-      ) : null}
-
-      <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-[var(--muted)]">
-        <span>Route:</span>
-        <code className="rounded-md border border-[var(--border)] bg-[var(--panel-soft)] px-2 py-0.5">{pathname}</code>
-        <span>Active company:</span>
-        <strong>{activeCompany?.name || 'none selected'}</strong>
-        {activeCompany ? <Sparkles className="h-3.5 w-3.5 text-[var(--company-accent)]" /> : null}
       </div>
-    </div>
+    </header>
   );
 }

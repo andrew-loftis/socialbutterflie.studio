@@ -1,0 +1,56 @@
+{
+  "orgs": [
+    {
+      "id": "5598f1e1-9105-44c9-9414-29bfba5f8815",
+      "name": "Members QA",
+      "created_at": "2026-02-20T16:08:18.263Z"
+    }
+  ],
+  "workspace_members": [
+    {
+      "org_id": "5598f1e1-9105-44c9-9414-29bfba5f8815",
+      "user_id": "owner-1",
+      "role": "admin",
+      "updated_at": "2026-02-20T16:08:18.264Z",
+      "created_at": "2026-02-20T16:08:18.265Z"
+    },
+    {
+      "org_id": "5598f1e1-9105-44c9-9414-29bfba5f8815",
+      "user_id": "moderator-1",
+      "role": "editor",
+      "updated_at": "2026-02-20T16:08:18.266Z",
+      "created_at": "2026-02-20T16:08:18.266Z"
+    }
+  ],
+  "connections": [],
+  "prefs": {},
+  "scheduled": [],
+  "campaigns": [],
+  "scheduled_log": [],
+  "account_groups": [],
+  "audit_log": [
+    {
+      "id": "cd552c60-a2d4-457a-adf5-4ab194c58855",
+      "user_id": "owner-1",
+      "action": "workspace.member.upserted",
+      "entity_type": "workspace_member",
+      "entity_id": "moderator-1",
+      "meta": {
+        "role": "editor"
+      },
+      "created_at": "2026-02-20T16:08:18.266Z",
+      "org_id": "5598f1e1-9105-44c9-9414-29bfba5f8815"
+    },
+    {
+      "id": "ad1f031e-500a-454d-bcc6-620b5121218c",
+      "user_id": "owner-1",
+      "action": "workspace.created",
+      "entity_type": "workspace",
+      "entity_id": "5598f1e1-9105-44c9-9414-29bfba5f8815",
+      "meta": {
+        "name": "Members QA"
+      },
+      "created_at": "2026-02-20T16:08:18.265Z"
+    }
+  ]
+}

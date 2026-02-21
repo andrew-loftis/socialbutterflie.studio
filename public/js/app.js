@@ -13,12 +13,24 @@ let captionPreviewVariant = null;
 let latestCalendarPlan = [];
 let accountGroups = [];
 let currentGroupId = null;
+let selectedPost = null;
 
 const platformColors = {
   instagram: '#e1306c',
   facebook: '#1877f2',
   youtube: '#ff0000',
   tiktok: '#010101'
+};
+
+const statusLabels = {
+  draft: 'Draft',
+  review: 'In Review',
+  pending: 'Approved',
+  rejected: 'Rejected',
+  retry: 'Retrying',
+  processing: 'Publishing',
+  posted: 'Posted',
+  failed: 'Failed'
 };
 
 function escapeHtml(text = '') {
@@ -636,12 +648,31 @@ function setupFilters() {
   if (campaignFilter) {
     campaignFilter.addEventListener('change', applyFilters);
   }
+  const statusContainer = document.getElementById('statusFilters');
+  if (statusContainer) {
+    statusContainer.querySelectorAll('button[data-status]').forEach((btn) => {
+      setButtonActive(btn, btn.getAttribute('data-active') !== 'false');
+      btn.addEventListener('click', () => {
+        const nextActive = btn.getAttribute('data-active') !== 'true';
+        setButtonActive(btn, nextActive);
+        applyFilters();
+      });
+    });
+  }
   const bulkBtn = document.getElementById('bulkUploadBtn');
   const bulkInput = document.getElementById('bulkCsvInput');
   if (bulkBtn && bulkInput) {
     bulkBtn.addEventListener('click', () => bulkInput.click());
     bulkInput.addEventListener('change', handleBulkCsv);
   }
+}
+
+function getActiveStatuses() {
+  const container = document.getElementById('statusFilters');
+  if (!container) return [];
+  return Array.from(container.querySelectorAll('button[data-status]'))
+    .filter(btn => btn.getAttribute('data-active') !== 'false')
+    .map(btn => btn.dataset.status);
 }
 
 function getActivePlatforms() {
@@ -655,11 +686,14 @@ function getActivePlatforms() {
 function filterPosts() {
   if (!Array.isArray(allPosts)) return [];
   const activePlatforms = getActivePlatforms();
+  const activeStatuses = getActiveStatuses();
   const campaignValue = document.getElementById('campaignFilter')?.value || '';
   return allPosts.filter(post => {
     const platformMatch = !activePlatforms.length || activePlatforms.includes(post.provider);
+    const normalizedStatus = post.status === 'retry' || post.status === 'processing' ? 'pending' : post.status;
+    const statusMatch = !activeStatuses.length || activeStatuses.includes(normalizedStatus);
     const campaignMatch = !campaignValue || post.campaign_id === campaignValue;
-    return platformMatch && campaignMatch;
+    return platformMatch && campaignMatch && statusMatch;
   });
 }
 
@@ -667,12 +701,14 @@ function renderCalendarEvents(posts) {
   if (!calendar) return;
   const events = posts.map(p => ({
     id: p.id,
-    title: `${p.provider}: ${p.caption?.slice(0, 32) || 'Post'}`,
+    title: `${statusLabels[p.status] || p.status}: ${p.caption?.slice(0, 30) || 'Post'}`,
     start: p.scheduled_at,
     extendedProps: {
       provider: p.provider,
       caption: p.caption,
-      campaign: campaigns.find(c => c.id === p.campaign_id) || null
+      campaign: campaigns.find(c => c.id === p.campaign_id) || null,
+      status: p.status,
+      review_notes: p.review_notes || ''
     },
     backgroundColor: platformColors[p.provider] || '#4f46e5',
     borderColor: '#1f2937'
@@ -761,6 +797,12 @@ async function loadCalendar() {
         showPost(id);
       },
       eventDrop: async (info) => {
+        const current = allPosts.find(p => p.id === info.event.id);
+        if (current && !['pending', 'retry', 'failed'].includes(current.status)) {
+          alert('Only approved/retry/failed posts can be rescheduled.');
+          info.revert();
+          return;
+        }
         try {
           await apiPost('/schedule/reschedule', { id: info.event.id, when: info.event.start.toISOString() });
           await loadCalendar();
@@ -770,7 +812,7 @@ async function loadCalendar() {
         }
       },
       eventDidMount: (info) => {
-        const { campaign } = info.event.extendedProps;
+        const { campaign, status } = info.event.extendedProps;
         if (campaign) {
           const badge = document.createElement('span');
           badge.className = 'absolute top-2 right-2 text-xs px-2 py-1 rounded-full border border-slate-900';
@@ -779,6 +821,11 @@ async function loadCalendar() {
           info.el.style.position = 'relative';
           info.el.appendChild(badge);
         }
+        const statusBadge = document.createElement('span');
+        statusBadge.className = 'absolute left-2 top-2 text-[10px] px-2 py-0.5 rounded-full border border-slate-900 bg-slate-900/70';
+        statusBadge.textContent = statusLabels[status] || status;
+        info.el.style.position = 'relative';
+        info.el.appendChild(statusBadge);
       }
     });
     calendar.render();
@@ -885,9 +932,83 @@ window.openCampaignManager = async function() {
   alert('Campaign created');
 };
 
-function showPost(id) { /* reserved for future — edit/delete */ }
+function showPost(id) {
+  selectedPost = allPosts.find(p => p.id === id) || null;
+  if (!selectedPost) return;
+  const modal = document.getElementById('postDetailModal');
+  const meta = document.getElementById('postDetailMeta');
+  const caption = document.getElementById('postDetailCaption');
+  const actions = document.getElementById('postDetailActions');
+  const notes = document.getElementById('postDetailNotes');
+  if (!modal || !meta || !caption || !actions || !notes) return;
+  const campaign = campaigns.find(c => c.id === selectedPost.campaign_id);
+  meta.innerHTML = `
+    <div><strong>Platform:</strong> ${escapeHtml(selectedPost.provider)}</div>
+    <div><strong>When:</strong> ${escapeHtml(formatDateTime(selectedPost.scheduled_at))}</div>
+    <div><strong>Status:</strong> ${escapeHtml(statusLabels[selectedPost.status] || selectedPost.status)}</div>
+    <div><strong>Campaign:</strong> ${escapeHtml(campaign?.name || 'None')}</div>
+  `;
+  caption.textContent = selectedPost.caption || '(No caption)';
+  notes.value = selectedPost.review_notes || '';
+
+  const buttons = [];
+  if (selectedPost.status === 'draft') {
+    buttons.push('<button type="button" class="btn btn-secondary" data-post-action="submit-review"><i class="fa-regular fa-eye"></i><span>Submit For Review</span></button>');
+  }
+  if (selectedPost.status === 'review') {
+    buttons.push('<button type="button" class="btn btn-primary" data-post-action="approve"><i class="fa-solid fa-check"></i><span>Approve & Schedule</span></button>');
+    buttons.push('<button type="button" class="btn btn-ghost" data-post-action="reject"><i class="fa-solid fa-reply"></i><span>Reject to Draft</span></button>');
+  }
+  if (!buttons.length) {
+    buttons.push('<button type="button" class="btn btn-ghost" data-post-action="close"><span>Close</span></button>');
+  }
+  actions.innerHTML = buttons.join('');
+  actions.querySelectorAll('[data-post-action]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const action = btn.getAttribute('data-post-action');
+      if (action === 'close') {
+        closePostDetailModal();
+        return;
+      }
+      await runPostAction(action);
+    });
+  });
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+}
+
+function closePostDetailModal() {
+  const modal = document.getElementById('postDetailModal');
+  if (!modal) return;
+  modal.classList.add('hidden');
+  modal.classList.remove('flex');
+  selectedPost = null;
+}
+
+async function runPostAction(action) {
+  if (!selectedPost) return;
+  const notes = document.getElementById('postDetailNotes')?.value?.trim() || '';
+  try {
+    if (action === 'submit-review') {
+      await apiPost('/schedule/submit-review', { id: selectedPost.id, reviewNotes: notes });
+    } else if (action === 'approve') {
+      await apiPost('/schedule/approve', { id: selectedPost.id, reviewNotes: notes });
+    } else if (action === 'reject') {
+      await apiPost('/schedule/reject', { id: selectedPost.id, reviewNotes: notes });
+    }
+    await loadCalendar();
+    applyFilters();
+    closePostDetailModal();
+  } catch (e) {
+    alert(`Action failed: ${e.message}`);
+  }
+}
 
 document.getElementById('btn-new').addEventListener('click', showModal);
+const postDetailClose = document.getElementById('postDetailCloseBtn');
+if (postDetailClose) {
+  postDetailClose.addEventListener('click', closePostDetailModal);
+}
 
 document.getElementById('postForm').addEventListener('submit', async (e) => {
   e.preventDefault();

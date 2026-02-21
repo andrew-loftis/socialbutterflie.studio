@@ -10,12 +10,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <LeftRail />
       <div className="shell-main">
         <CommandBar />
-        <div className="shell-grid">
-          <main className="shell-content">{children}</main>
-          <InspectorPanel />
+        <div className="shell-inner">
+          <div className="shell-grid">
+            <main className="shell-content">{children}</main>
+            <InspectorPanel />
+          </div>
         </div>
       </div>
     </div>
   );
 }
+
 

@@ -52,6 +52,9 @@
           <a href="./build.html" class="nav-item" aria-label="Build Post">
             <i class="fa-solid fa-plus-circle"></i>
           </a>
+          <a href="./review.html" class="nav-item" aria-label="Review Queue">
+            <i class="fa-regular fa-eye"></i>
+          </a>
           <a href="./analytics.html" class="nav-item" aria-label="Analytics">
             <i class="fa-solid fa-chart-line"></i>
           </a>
@@ -80,6 +83,7 @@
             <p>View and manage your scheduled posts across all platforms</p>
           </div>
           <div class="flex items-center gap-4 flex-wrap justify-end">
+            <a href="./review.html" class="btn btn-secondary"><i class="fa-regular fa-eye"></i><span>Review Queue</span></a>
             <button class="btn btn-primary" id="btn-new"><i class="fa-solid fa-plus"></i><span>New Post</span></button>
           </div>
         </header>
@@ -100,10 +104,38 @@
                   <button type="button" class="btn btn-ghost btn-toggle-active" data-provider="youtube" data-active="true"><i class="fa-brands fa-youtube"></i><span>YouTube</span></button>
                   <button type="button" class="btn btn-ghost btn-toggle-active" data-provider="tiktok" data-active="true"><i class="fa-brands fa-tiktok"></i><span>TikTok</span></button>
                 </div>
+                <div id="statusFilters" class="toolbar-group" aria-label="Workflow status filters">
+                  <button type="button" class="btn btn-ghost btn-toggle-active" data-status="draft" data-active="true"><i class="fa-regular fa-floppy-disk"></i><span>Draft</span></button>
+                  <button type="button" class="btn btn-ghost btn-toggle-active" data-status="review" data-active="true"><i class="fa-regular fa-eye"></i><span>In Review</span></button>
+                  <button type="button" class="btn btn-ghost btn-toggle-active" data-status="pending" data-active="true"><i class="fa-regular fa-clock"></i><span>Approved</span></button>
+                  <button type="button" class="btn btn-ghost btn-toggle-active" data-status="posted" data-active="true"><i class="fa-solid fa-check"></i><span>Posted</span></button>
+                  <button type="button" class="btn btn-ghost btn-toggle-active" data-status="failed" data-active="true"><i class="fa-solid fa-triangle-exclamation"></i><span>Failed</span></button>
+                </div>
               </div>
             </div>
             <div id="calendar"></div>
           </section>
+        </div>
+      </div>
+    </div>
+
+    <div id="postDetailModal" class="modal-shell hidden">
+      <div class="modal-panel">
+        <div class="modal-header">
+          <h3 class="modal-title">Post Details</h3>
+          <button id="postDetailCloseBtn" class="close-button" aria-label="Close"><i class="fa-regular fa-circle-xmark"></i></button>
+        </div>
+        <div class="space-y-4">
+          <div class="text-sm" id="postDetailMeta"></div>
+          <div>
+            <label class="label">Caption</label>
+            <div id="postDetailCaption" class="caption-card text-sm"></div>
+          </div>
+          <div>
+            <label class="label">Review Notes</label>
+            <textarea id="postDetailNotes" rows="3" class="glass-input" placeholder="Optional notes for approval/rejection"></textarea>
+          </div>
+          <div class="footer-actions" id="postDetailActions"></div>
         </div>
       </div>
     </div>
@@ -178,6 +210,7 @@
       <div class="nav-group">
         <a href="./calendar.html" class="nav-item active" aria-label="Calendar"><i class="fa-solid fa-calendar-days"></i></a>
         <a href="./build.html" class="nav-item" aria-label="Build Post"><i class="fa-solid fa-plus-circle"></i></a>
+        <a href="./review.html" class="nav-item" aria-label="Review Queue"><i class="fa-regular fa-eye"></i></a>
         <a href="./analytics.html" class="nav-item" aria-label="Analytics"><i class="fa-solid fa-chart-line"></i></a>
         <a href="./storage.html" class="nav-item" aria-label="Storage"><i class="fa-solid fa-cloud"></i></a>
         <a href="./settings.html" class="nav-item" aria-label="Settings"><i class="fa-solid fa-gear"></i></a>

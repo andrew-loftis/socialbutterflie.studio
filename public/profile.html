@@ -22,20 +22,36 @@
   <body>
     <div class="app-layout">
       <aside class="nav-rail">
-        <div class="nav-brand">SB</div>
+        <a href="./index.html" class="nav-brand">
+          <svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+            <path d="M16 16 Q10 10, 5 12 Q3 13, 3 15 Q3 17, 5 18 Q10 20, 16 16" />
+            <path d="M16 16 Q22 10, 27 12 Q29 13, 29 15 Q29 17, 27 18 Q22 20, 16 16" />
+            <path d="M16 17 Q12 20, 8 22 Q6 23, 6 25 Q6 26, 7 27 Q11 28, 16 24" />
+            <path d="M16 17 Q20 20, 24 22 Q26 23, 26 25 Q26 26, 25 27 Q21 28, 16 24" />
+            <line x1="16" y1="6" x2="16" y2="28" />
+            <circle cx="16" cy="6" r="1.5" />
+          </svg>
+        </a>
         <nav class="nav-group" aria-label="Primary">
-          <a href="./index.html" class="nav-item" aria-label="Scheduler"><i class="fa-solid fa-calendar-days"></i></a>
-          <a href="./analytics.html" class="nav-item" aria-label="Analytics"><i class="fa-solid fa-square-poll-vertical"></i></a>
-          <a href="./settings.html" class="nav-item" aria-label="Settings"><i class="fa-solid fa-sliders"></i></a>
+          <a href="./calendar.html" class="nav-item" aria-label="Calendar"><i class="fa-solid fa-calendar-days"></i></a>
+          <a href="./build.html" class="nav-item" aria-label="Build Post"><i class="fa-solid fa-plus-circle"></i></a>
+          <a href="./review.html" class="nav-item" aria-label="Review Queue"><i class="fa-regular fa-eye"></i></a>
+          <a href="./analytics.html" class="nav-item" aria-label="Analytics"><i class="fa-solid fa-chart-line"></i></a>
+          <a href="./storage.html" class="nav-item" aria-label="Storage"><i class="fa-solid fa-cloud"></i></a>
+          <a href="./settings.html" class="nav-item" aria-label="Settings"><i class="fa-solid fa-gear"></i></a>
         </nav>
-        <a href="./profile.html" class="nav-avatar active" title="Profile"><i class="fa-regular fa-circle-user"></i></a>
+        <a href="./profile.html" class="nav-avatar active" title="Profile"><i class="fa-solid fa-user"></i></a>
       </aside>
 
       <div class="main-surface">
         <header class="top-bar glass-panel">
           <div>
             <h1>Profile & Workspace</h1>
-            <p>Manage connected networks and AI defaults. Personal auth coming soon.</p>
+            <p>Manage account groups, brand voice profiles, and AI defaults.</p>
+            <div class="section-tabs" aria-label="Profile sections">
+              <a class="section-tab" href="#accountGroupsSection"><i class="fa-solid fa-layer-group"></i><span>Groups</span></a>
+              <a class="section-tab" href="#aiPrefsSection"><i class="fa-solid fa-wand-magic-sparkles"></i><span>AI Defaults</span></a>
+            </div>
           </div>
           <a class="btn btn-secondary" href="./index.html"><i class="fa-solid fa-arrow-left"></i><span>Back</span></a>
         </header>
@@ -347,6 +363,28 @@
         </div>
       </div>
     </div>
+
+    <nav class="mobile-nav">
+      <a href="./index.html" class="nav-brand">
+        <svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+          <path d="M16 16 Q10 10, 5 12 Q3 13, 3 15 Q3 17, 5 18 Q10 20, 16 16" />
+          <path d="M16 16 Q22 10, 27 12 Q29 13, 29 15 Q29 17, 27 18 Q22 20, 16 16" />
+          <path d="M16 17 Q12 20, 8 22 Q6 23, 6 25 Q6 26, 7 27 Q11 28, 16 24" />
+          <path d="M16 17 Q20 20, 24 22 Q26 23, 26 25 Q26 26, 25 27 Q21 28, 16 24" />
+          <line x1="16" y1="6" x2="16" y2="28" />
+          <circle cx="16" cy="6" r="1.5" />
+        </svg>
+      </a>
+      <div class="nav-group">
+        <a href="./calendar.html" class="nav-item" aria-label="Calendar"><i class="fa-solid fa-calendar-days"></i></a>
+        <a href="./build.html" class="nav-item" aria-label="Build Post"><i class="fa-solid fa-plus-circle"></i></a>
+        <a href="./review.html" class="nav-item" aria-label="Review Queue"><i class="fa-regular fa-eye"></i></a>
+        <a href="./analytics.html" class="nav-item" aria-label="Analytics"><i class="fa-solid fa-chart-line"></i></a>
+        <a href="./storage.html" class="nav-item" aria-label="Storage"><i class="fa-solid fa-cloud"></i></a>
+        <a href="./settings.html" class="nav-item" aria-label="Settings"><i class="fa-solid fa-gear"></i></a>
+      </div>
+      <a href="./profile.html" class="nav-avatar active" aria-label="Profile"><i class="fa-solid fa-user"></i></a>
+    </nav>
 
     <script type="module" src="/js/profile.js"></script>
   </body>

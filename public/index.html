@@ -42,6 +42,9 @@
         <a href="./build.html" class="nav-item" aria-label="Build Post">
           <i class="fa-solid fa-plus-circle"></i>
         </a>
+        <a href="./review.html" class="nav-item" aria-label="Review Queue">
+          <i class="fa-regular fa-eye"></i>
+        </a>
         <a href="./analytics.html" class="nav-item" aria-label="Analytics">
           <i class="fa-solid fa-chart-line"></i>
         </a>
@@ -57,167 +60,238 @@
       </a>
     </aside>
     <div class="main-surface">
-      <!-- Hero Header -->
       <header class="top-bar glass-panel">
         <div>
-          <h1>Welcome back! 👋</h1>
-          <p>Here's what's happening with your social media today</p>
+          <h1>Dashboard</h1>
+          <p>Operational overview of scheduling, approvals, and delivery health.</p>
         </div>
-        <div class="dashboard-date">
-          <i class="fa-solid fa-calendar"></i>
-          <span id="currentDate"></span>
+        <div class="flex items-center gap-3">
+          <div class="dashboard-date">
+            <i class="fa-solid fa-calendar"></i>
+            <span id="currentDate"></span>
+          </div>
+          <a href="./review.html" class="btn btn-secondary"><i class="fa-regular fa-eye"></i><span>Review Queue</span></a>
+          <a href="./settings.html" class="btn btn-ghost"><i class="fa-solid fa-sliders"></i><span>Context</span></a>
         </div>
       </header>
 
-      <div class="space-y-8 mt-8">
-        <!-- Quick Stats Grid -->
-        <div class="stats-grid">
-        <div class="stat-card">
-          <div class="stat-header">
-            <div class="stat-icon" style="background: linear-gradient(135deg, var(--accent), var(--accent-strong));">
-              <i class="fa-solid fa-clock"></i>
+      <section class="glass-panel p-4 mt-6">
+        <div id="activeContextBanner" class="text-sm text-muted">Loading active workspace context...</div>
+      </section>
+
+      <section class="glass-panel p-4 mt-6 command-bar">
+        <div class="command-input-wrap">
+          <i class="fa-solid fa-magnifying-glass"></i>
+          <input id="commandInput" class="glass-input" placeholder="Search posts, campaigns, accounts, reports... ( / )" />
+        </div>
+        <div class="command-actions">
+          <button class="btn btn-secondary btn-sm" data-command="new-post"><i class="fa-solid fa-plus"></i><span>New Post</span></button>
+          <button class="btn btn-ghost btn-sm" data-command="review"><i class="fa-regular fa-eye"></i><span>Review</span></button>
+          <button class="btn btn-ghost btn-sm" data-command="reports"><i class="fa-regular fa-file-lines"></i><span>Reports</span></button>
+        </div>
+      </section>
+
+      <div class="workspace-layout mt-8">
+        <div class="workspace-main space-y-8">
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-header">
+                <div class="stat-icon" style="background: linear-gradient(135deg, var(--accent), var(--accent-strong));">
+                  <i class="fa-solid fa-clock"></i>
+                </div>
+                <div class="stat-trend stat-trend-up">
+                  <i class="fa-solid fa-arrow-up"></i>
+                  <span>12%</span>
+                </div>
+              </div>
+              <div class="stat-value" id="scheduledCount">0</div>
+              <div class="stat-label">Scheduled Posts</div>
             </div>
-            <div class="stat-trend stat-trend-up">
-              <i class="fa-solid fa-arrow-up"></i>
-              <span>12%</span>
+
+            <div class="stat-card">
+              <div class="stat-header">
+                <div class="stat-icon" style="background: linear-gradient(135deg, var(--blue-primary), var(--blue-secondary));">
+                  <i class="fa-solid fa-check-circle"></i>
+                </div>
+                <div class="stat-trend stat-trend-up">
+                  <i class="fa-solid fa-arrow-up"></i>
+                  <span>8%</span>
+                </div>
+              </div>
+              <div class="stat-value" id="publishedCount">0</div>
+              <div class="stat-label">Published This Week</div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-header">
+                <div class="stat-icon" style="background: linear-gradient(135deg, #8b5cf6, #7c3aed);">
+                  <i class="fa-solid fa-heart"></i>
+                </div>
+                <div class="stat-trend stat-trend-up">
+                  <i class="fa-solid fa-arrow-up"></i>
+                  <span>24%</span>
+                </div>
+              </div>
+              <div class="stat-value">2.4K</div>
+              <div class="stat-label">Total Engagement</div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-header">
+                <div class="stat-icon" style="background: linear-gradient(135deg, #10b981, #059669);">
+                  <i class="fa-solid fa-users"></i>
+                </div>
+                <div class="stat-trend stat-trend-up">
+                  <i class="fa-solid fa-arrow-up"></i>
+                  <span>15%</span>
+                </div>
+              </div>
+              <div class="stat-value">847</div>
+              <div class="stat-label">New Followers</div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-header">
+                <div class="stat-icon" style="background: linear-gradient(135deg, #f59e0b, #eab308);">
+                  <i class="fa-regular fa-eye"></i>
+                </div>
+              </div>
+              <div class="stat-value" id="reviewCount">0</div>
+              <div class="stat-label">Needs Review</div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-header">
+                <div class="stat-icon" style="background: linear-gradient(135deg, #7c3aed, #4f46e5);">
+                  <i class="fa-regular fa-floppy-disk"></i>
+                </div>
+              </div>
+              <div class="stat-value" id="draftCount">0</div>
+              <div class="stat-label">Draft Posts</div>
             </div>
           </div>
-          <div class="stat-value" id="scheduledCount">0</div>
-          <div class="stat-label">Scheduled Posts</div>
-        </div>
-        
-        <div class="stat-card">
-          <div class="stat-header">
-            <div class="stat-icon" style="background: linear-gradient(135deg, var(--blue-primary), var(--blue-secondary));">
-              <i class="fa-solid fa-check-circle"></i>
-            </div>
-            <div class="stat-trend stat-trend-up">
-              <i class="fa-solid fa-arrow-up"></i>
-              <span>8%</span>
-            </div>
+
+          <div class="dashboard-grid">
+            <section class="glass-panel p-6 space-y-6">
+              <div class="panel-header">
+                <div>
+                  <h2>Connected Accounts</h2>
+                  <p class="panel-subtitle">Manage your social media connections</p>
+                </div>
+                <button class="btn btn-secondary btn-sm">
+                  <i class="fa-solid fa-plus"></i>
+                  <span>Add Account</span>
+                </button>
+              </div>
+              <div id="connectionsGrid" class="connections-grid"></div>
+            </section>
+
+            <section class="glass-panel p-6 space-y-6">
+              <div class="panel-header">
+                <div>
+                  <h2>Upcoming Posts</h2>
+                  <p class="panel-subtitle">Next 7 days</p>
+                </div>
+                <a href="./calendar.html" class="btn btn-ghost btn-sm">
+                  View All
+                  <i class="fa-solid fa-arrow-right"></i>
+                </a>
+              </div>
+              <div id="upcomingPosts" class="upcoming-posts-list"></div>
+            </section>
+
+            <section class="glass-panel p-6 space-y-6 dashboard-campaigns">
+              <div class="panel-header">
+                <div>
+                  <h2>Campaigns & Groups</h2>
+                  <p class="panel-subtitle">Organize your content strategy</p>
+                </div>
+                <button class="btn btn-primary btn-sm">
+                  <i class="fa-solid fa-plus"></i>
+                  <span>New Campaign</span>
+                </button>
+              </div>
+              <div id="campaignsGrid" class="campaigns-grid"></div>
+            </section>
+
+            <section class="glass-panel p-6 space-y-6 dashboard-insights">
+              <div class="panel-header">
+                <div>
+                  <h2>AI Insights</h2>
+                  <p class="panel-subtitle">Powered by your content data</p>
+                </div>
+                <button class="btn btn-ghost btn-sm" id="refreshInsights">
+                  <i class="fa-solid fa-rotate"></i>
+                </button>
+              </div>
+              <div class="insights-grid">
+                <div class="insight-card" data-inspector-type="insight" data-inspector-id="best-time">
+                  <div class="insight-icon" style="background: linear-gradient(135deg, #f59e0b, #eab308);">
+                    <i class="fa-solid fa-lightbulb"></i>
+                  </div>
+                  <div>
+                    <h3>Best Time to Post</h3>
+                    <p>Your audience is most active on weekdays between 2-4 PM</p>
+                  </div>
+                </div>
+                <div class="insight-card" data-inspector-type="insight" data-inspector-id="trending-content">
+                  <div class="insight-icon" style="background: linear-gradient(135deg, #ef4444, #dc2626);">
+                    <i class="fa-solid fa-fire"></i>
+                  </div>
+                  <div>
+                    <h3>Trending Content</h3>
+                    <p>Video content is getting 3x more engagement this month</p>
+                  </div>
+                </div>
+                <div class="insight-card" data-inspector-type="insight" data-inspector-id="growth-opportunity">
+                  <div class="insight-icon" style="background: linear-gradient(135deg, var(--blue-primary), #06b6d4);">
+                    <i class="fa-solid fa-rocket"></i>
+                  </div>
+                  <div>
+                    <h3>Growth Opportunity</h3>
+                    <p>Instagram Stories have 45% more reach potential</p>
+                  </div>
+                </div>
+              </div>
+            </section>
           </div>
-          <div class="stat-value" id="publishedCount">0</div>
-          <div class="stat-label">Published This Week</div>
-        </div>
-        
-        <div class="stat-card">
-          <div class="stat-header">
-            <div class="stat-icon" style="background: linear-gradient(135deg, #8b5cf6, #7c3aed);">
-              <i class="fa-solid fa-heart"></i>
-            </div>
-            <div class="stat-trend stat-trend-up">
-              <i class="fa-solid fa-arrow-up"></i>
-              <span>24%</span>
-            </div>
-          </div>
-          <div class="stat-value">2.4K</div>
-          <div class="stat-label">Total Engagement</div>
-        </div>
-        
-        <div class="stat-card">
-          <div class="stat-header">
-            <div class="stat-icon" style="background: linear-gradient(135deg, #10b981, #059669);">
-              <i class="fa-solid fa-users"></i>
-            </div>
-            <div class="stat-trend stat-trend-up">
-              <i class="fa-solid fa-arrow-up"></i>
-              <span>15%</span>
-            </div>
-          </div>
-          <div class="stat-value">847</div>
-          <div class="stat-label">New Followers</div>
-        </div>
         </div>
 
-        <!-- Main Grid Layout -->
-        <div class="dashboard-grid">
-        <!-- Connected Accounts -->
-        <section class="glass-panel p-6 space-y-6">
-          <div class="panel-header">
+        <aside class="glass-panel inspector-panel" id="inspectorPanel">
+          <div class="inspector-header">
             <div>
-              <h2>Connected Accounts</h2>
-              <p class="panel-subtitle">Manage your social media connections</p>
+              <p class="inspector-kicker" id="inspectorType">Inspector</p>
+              <h3 id="inspectorTitle">Select an object</h3>
             </div>
-            <button class="btn btn-secondary btn-sm">
-              <i class="fa-solid fa-plus"></i>
-              <span>Add Account</span>
-            </button>
+            <button class="btn btn-ghost btn-sm" id="closeInspectorBtn" aria-label="Close inspector"><i class="fa-solid fa-xmark"></i></button>
           </div>
-          <div id="connectionsGrid" class="connections-grid"></div>
-        </section>
-
-        <!-- Upcoming Posts -->
-        <section class="glass-panel p-6 space-y-6">
-          <div class="panel-header">
-            <div>
-              <h2>Upcoming Posts</h2>
-              <p class="panel-subtitle">Next 7 days</p>
-            </div>
-            <a href="./calendar.html" class="btn btn-ghost btn-sm">
-              View All
-              <i class="fa-solid fa-arrow-right"></i>
-            </a>
+          <div class="inspector-meta">
+            <span class="badge" id="inspectorStatus">Ready</span>
+            <span class="inspector-stamp" id="inspectorUpdated">No selection</span>
           </div>
-          <div id="upcomingPosts" class="upcoming-posts-list"></div>
-        </section>
-
-        <!-- Campaigns & Groups -->
-        <section class="glass-panel p-6 space-y-6 dashboard-campaigns">
-          <div class="panel-header">
-            <div>
-              <h2>Campaigns & Groups</h2>
-              <p class="panel-subtitle">Organize your content strategy</p>
-            </div>
-            <button class="btn btn-primary btn-sm">
-              <i class="fa-solid fa-plus"></i>
-              <span>New Campaign</span>
-            </button>
+          <div class="inspector-block">
+            <h4>Summary</h4>
+            <p id="inspectorSummary" class="text-muted">Click any post, campaign, account, or insight card to inspect details.</p>
           </div>
-          <div id="campaignsGrid" class="campaigns-grid"></div>
-        </section>
-
-        <!-- AI Insights -->
-        <section class="glass-panel p-6 space-y-6 dashboard-insights">
-          <div class="panel-header">
-            <div>
-              <h2>AI Insights</h2>
-              <p class="panel-subtitle">Powered by your content data</p>
-            </div>
-            <button class="btn btn-ghost btn-sm" id="refreshInsights">
-              <i class="fa-solid fa-rotate"></i>
-            </button>
+          <div class="inspector-block">
+            <h4>Version History</h4>
+            <ul id="inspectorVersions" class="inspector-list">
+              <li>v1 Initial draft</li>
+            </ul>
           </div>
-          <div class="insights-grid">
-            <div class="insight-card">
-              <div class="insight-icon" style="background: linear-gradient(135deg, #f59e0b, #eab308);">
-                <i class="fa-solid fa-lightbulb"></i>
-              </div>
-              <div>
-                <h3>Best Time to Post</h3>
-                <p>Your audience is most active on weekdays between 2-4 PM</p>
-              </div>
-            </div>
-            <div class="insight-card">
-              <div class="insight-icon" style="background: linear-gradient(135deg, #ef4444, #dc2626);">
-                <i class="fa-solid fa-fire"></i>
-              </div>
-              <div>
-                <h3>Trending Content</h3>
-                <p>Video content is getting 3x more engagement this month</p>
-              </div>
-            </div>
-            <div class="insight-card">
-              <div class="insight-icon" style="background: linear-gradient(135deg, var(--blue-primary), #06b6d4);">
-                <i class="fa-solid fa-rocket"></i>
-              </div>
-              <div>
-                <h3>Growth Opportunity</h3>
-                <p>Instagram Stories have 45% more reach potential</p>
-              </div>
-            </div>
+          <div class="inspector-block">
+            <h4>Approvals</h4>
+            <ul id="inspectorApprovals" class="inspector-list">
+              <li>Awaiting reviewer assignment</li>
+            </ul>
           </div>
-        </section>
-        </div>
+          <div class="inspector-block">
+            <h4>Audit Log</h4>
+            <ul id="inspectorAudit" class="inspector-list">
+              <li>No audit events yet</li>
+            </ul>
+          </div>
+        </aside>
       </div>
     </div>
     <nav class="mobile-nav">
@@ -234,6 +308,7 @@
       <div class="nav-group">
         <a href="./calendar.html" class="nav-item" aria-label="Calendar"><i class="fa-solid fa-calendar-days"></i></a>
         <a href="./build.html" class="nav-item" aria-label="Build Post"><i class="fa-solid fa-plus-circle"></i></a>
+        <a href="./review.html" class="nav-item" aria-label="Review Queue"><i class="fa-regular fa-eye"></i></a>
         <a href="./analytics.html" class="nav-item" aria-label="Analytics"><i class="fa-solid fa-chart-line"></i></a>
         <a href="./storage.html" class="nav-item" aria-label="Storage"><i class="fa-solid fa-cloud"></i></a>
         <a href="./settings.html" class="nav-item" aria-label="Settings"><i class="fa-solid fa-gear"></i></a>
@@ -241,75 +316,6 @@
       <a href="./profile.html" class="nav-avatar" aria-label="Profile"><i class="fa-solid fa-user"></i></a>
     </nav>
   </div>
-  <script>
-    function loadConnections() {
-      const connectionsGrid = document.getElementById('connectionsGrid');
-      const connections = [
-        { platform: 'Instagram', icon: 'fa-brands fa-instagram', color: '#e1306c', connected: true },
-        { platform: 'Facebook', icon: 'fa-brands fa-facebook', color: '#1877f2', connected: true },
-        { platform: 'YouTube', icon: 'fa-brands fa-youtube', color: '#ff0000', connected: false },
-        { platform: 'TikTok', icon: 'fa-brands fa-tiktok', color: '#000000', connected: false }
-      ];
-      connectionsGrid.innerHTML = connections.map(conn => 
-        `<div class="connection-card">
-          <div class="connection-icon" style="color: ${conn.color};">
-            <i class="${conn.icon}"></i>
-          </div>
-          <div class="connection-details">
-            <div class="connection-name">${conn.platform}</div>
-            <div class="connection-status">${conn.connected ? 'Connected' : 'Not Connected'}</div>
-          </div>
-          ${conn.connected ? '<i class="fa-solid fa-check-circle connection-check"></i>' : '<button class="btn btn-sm">Connect</button>'}
-        </div>`
-      ).join('');
-    }
-    function loadStats() {
-      document.getElementById('scheduledCount').textContent = '12';
-      document.getElementById('publishedCount').textContent = '8';
-    }
-    function loadCampaigns() {
-      const campaignsGrid = document.getElementById('campaignsGrid');
-      const campaigns = [
-        { name: 'Summer Sale 2024', posts: 15, platforms: ['instagram', 'facebook'], color: '#f59e0b' },
-        { name: 'Product Launch', posts: 8, platforms: ['youtube', 'tiktok'], color: '#8b5cf6' }
-      ];
-      campaignsGrid.innerHTML = campaigns.map(campaign => 
-        `<div class="campaign-card">
-          <div class="campaign-header">
-            <div class="campaign-marker" style="background: ${campaign.color};"></div>
-            <div>
-              <h3 class="campaign-name">${campaign.name}</h3>
-              <p class="campaign-posts">${campaign.posts} posts scheduled</p>
-            </div>
-          </div>
-          <div class="campaign-platforms">
-            ${campaign.platforms.map(p => `<i class="fa-brands fa-${p}"></i>`).join('')}
-          </div>
-        </div>`
-      ).join('');
-    }
-    function setCurrentDate() {
-      const dateEl = document.getElementById('currentDate');
-      const now = new Date();
-      const options = { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' };
-      dateEl.textContent = now.toLocaleDateString('en-US', options);
-    }
-    
-    // Apply saved theme on page load
-    function applyTheme() {
-      const savedTheme = localStorage.getItem('theme') || 'light';
-      if (savedTheme === 'dark') {
-        document.body.classList.add('dark-mode');
-      }
-    }
-    
-    document.addEventListener('DOMContentLoaded', function() {
-      applyTheme();
-      setCurrentDate();
-      loadConnections();
-      loadStats();
-      loadCampaigns();
-    });
-  </script>
+  <script type="module" src="/js/home.js"></script>
 </body>
 </html>

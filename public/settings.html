@@ -38,6 +38,9 @@
           <a href="./build.html" class="nav-item" aria-label="Build Post">
             <i class="fa-solid fa-plus-circle"></i>
           </a>
+          <a href="./review.html" class="nav-item" aria-label="Review Queue">
+            <i class="fa-regular fa-eye"></i>
+          </a>
           <a href="./analytics.html" class="nav-item" aria-label="Analytics">
             <i class="fa-solid fa-chart-line"></i>
           </a>
@@ -57,13 +60,75 @@
         <header class="top-bar glass-panel">
           <div>
             <h1>Workspace Settings</h1>
-            <p>Calibrate AI tone, defaults, and connections inside a refined glass UI.</p>
+            <p>Context, team permissions, theme, AI voice, and account connections in one place.</p>
+            <div class="section-tabs" aria-label="Settings sections">
+              <a class="section-tab" href="#contextSection"><i class="fa-solid fa-compass"></i><span>Context</span></a>
+              <a class="section-tab" href="#membersSection"><i class="fa-solid fa-user-shield"></i><span>Members</span></a>
+              <a class="section-tab" href="#appearanceSection"><i class="fa-solid fa-palette"></i><span>Appearance</span></a>
+              <a class="section-tab" href="#aiSection"><i class="fa-solid fa-wand-magic-sparkles"></i><span>AI</span></a>
+              <a class="section-tab" href="#settingsConnections"><i class="fa-solid fa-link"></i><span>Accounts</span></a>
+            </div>
           </div>
           <a class="btn btn-secondary" href="./index.html"><i class="fa-solid fa-arrow-left"></i><span>Back to dashboard</span></a>
         </header>
 
         <div class="space-y-8 mt-8">
-          <section class="glass-panel p-6 space-y-5">
+          <section id="contextSection" class="glass-panel p-6 space-y-5">
+            <div>
+              <h2 class="text-lg font-semibold">Workspace Switcher</h2>
+              <p class="panel-subtitle">Set active user/workspace context for API calls, approvals, and scheduling.</p>
+            </div>
+            <div class="form-grid">
+              <div>
+                <label class="label" for="contextUserId">User ID</label>
+                <input id="contextUserId" class="glass-input" placeholder="e.g. demo-user-1" />
+              </div>
+              <div>
+                <label class="label" for="contextUserRole">Role</label>
+                <select id="contextUserRole" class="glass-input">
+                  <option value="viewer">Viewer</option>
+                  <option value="editor">Editor</option>
+                  <option value="admin">Admin</option>
+                </select>
+              </div>
+              <div>
+                <label class="label" for="workspaceSelect">Workspace</label>
+                <div class="flex gap-2">
+                  <select id="workspaceSelect" class="glass-input flex-1">
+                    <option value="">No workspace</option>
+                  </select>
+                  <button id="refreshWorkspacesBtn" type="button" class="btn btn-ghost"><i class="fa-solid fa-rotate"></i></button>
+                </div>
+              </div>
+              <div class="flex gap-2">
+                <input id="newWorkspaceName" class="glass-input flex-1" placeholder="New workspace name" />
+                <button id="createWorkspaceBtn" type="button" class="btn btn-secondary"><i class="fa-solid fa-plus"></i><span>Create</span></button>
+              </div>
+              <div class="footer-actions">
+                <button id="saveContextBtn" class="btn btn-primary" type="button"><i class="fa-solid fa-floppy-disk"></i><span>Save Context</span></button>
+              </div>
+              <div id="contextStatus" class="text-xs text-muted"></div>
+            </div>
+          </section>
+          <section id="membersSection" class="glass-panel p-6 space-y-5">
+            <div>
+              <h2 class="text-lg font-semibold">Workspace Members</h2>
+              <p class="panel-subtitle">Admins can assign roles used by approval workflow permissions.</p>
+            </div>
+            <div class="flex gap-2">
+              <input id="memberUserId" class="glass-input flex-1" placeholder="member user id" />
+              <select id="memberRole" class="glass-input">
+                <option value="viewer">Viewer</option>
+                <option value="editor">Editor</option>
+                <option value="admin">Admin</option>
+              </select>
+              <button id="addMemberBtn" type="button" class="btn btn-secondary"><i class="fa-solid fa-plus"></i><span>Add/Update</span></button>
+            </div>
+            <div id="memberStatus" class="text-xs text-muted"></div>
+            <div id="memberList" class="space-y-2 text-sm"></div>
+          </section>
+
+          <section id="appearanceSection" class="glass-panel p-6 space-y-5">
             <div>
               <h2 class="text-lg font-semibold">Appearance</h2>
               <p class="panel-subtitle">Customize how the app looks and feels.</p>
@@ -86,7 +151,7 @@
             </div>
           </section>
 
-          <section class="glass-panel p-6 space-y-5">
+          <section id="aiSection" class="glass-panel p-6 space-y-5">
             <div>
               <h2 class="text-lg font-semibold">AI Preferences</h2>
               <p class="panel-subtitle">Tune the assistant to speak in your brand voice and seed default hashtags.</p>
@@ -118,6 +183,103 @@
 
     <script type="module">
       import { apiGet, apiPost } from '/js/api.js';
+
+      let workspaces = [];
+      let members = [];
+
+      function readContext() {
+        return {
+          userId: (localStorage.getItem('sb_user_id') || 'demo').trim() || 'demo',
+          orgId: (localStorage.getItem('sb_org_id') || '').trim(),
+          userRole: (localStorage.getItem('sb_user_role') || 'editor').trim() || 'editor'
+        };
+      }
+
+      function writeContext({ userId, orgId, userRole }) {
+        if (userId) localStorage.setItem('sb_user_id', userId);
+        else localStorage.removeItem('sb_user_id');
+        if (orgId) localStorage.setItem('sb_org_id', orgId);
+        else localStorage.removeItem('sb_org_id');
+        if (userRole) localStorage.setItem('sb_user_role', userRole);
+        else localStorage.removeItem('sb_user_role');
+      }
+
+      function renderContextStatus() {
+        const status = document.getElementById('contextStatus');
+        if (!status) return;
+        const ctx = readContext();
+        const ws = workspaces.find(w => w.id === ctx.orgId);
+        status.innerHTML = `Active user: <strong>${ctx.userId}</strong> &middot; Role: <strong>${ctx.userRole}</strong>${ctx.orgId ? ` &middot; Workspace: <strong>${ws ? ws.name : ctx.orgId}</strong>` : ''}`;
+      }
+
+      async function loadWorkspaces() {
+        const select = document.getElementById('workspaceSelect');
+        if (!select) return;
+        const ctx = readContext();
+        const response = await apiGet('/workspaces');
+        workspaces = Array.isArray(response.items) ? response.items : [];
+        select.innerHTML = '<option value="">No workspace</option>' + workspaces.map(w => `<option value="${w.id}">${w.name}</option>`).join('');
+        if (ctx.orgId) select.value = ctx.orgId;
+        renderContextStatus();
+      }
+
+      function renderMembers() {
+        const list = document.getElementById('memberList');
+        if (!list) return;
+        const ctx = readContext();
+        if (!ctx.orgId) {
+          list.innerHTML = '<div class="text-muted text-xs">Select a workspace to manage members.</div>';
+          return;
+        }
+        if (!members.length) {
+          list.innerHTML = '<div class="text-muted text-xs">No members yet.</div>';
+          return;
+        }
+        list.innerHTML = members.map(m => `
+          <div class="caption-card flex items-center justify-between">
+            <span>${m.user_id}</span>
+            <span class="badge">${m.role}</span>
+          </div>
+        `).join('');
+      }
+
+      async function loadMembers() {
+        const ctx = readContext();
+        if (!ctx.orgId) {
+          members = [];
+          renderMembers();
+          return;
+        }
+        try {
+          const res = await apiGet('/workspace/members');
+          members = Array.isArray(res.items) ? res.items : [];
+          renderMembers();
+          document.getElementById('memberStatus').textContent = '';
+        } catch (e) {
+          document.getElementById('memberStatus').textContent = `Members unavailable: ${e.message}`;
+          members = [];
+          renderMembers();
+        }
+      }
+
+      async function upsertMember() {
+        const userId = (document.getElementById('memberUserId').value || '').trim();
+        const role = (document.getElementById('memberRole').value || 'viewer').trim();
+        if (!userId) return;
+        await apiPost('/workspace/members', { userId, role });
+        document.getElementById('memberUserId').value = '';
+        await loadMembers();
+      }
+
+      async function createWorkspace() {
+        const input = document.getElementById('newWorkspaceName');
+        const name = input?.value?.trim();
+        if (!name) return;
+        const created = await apiPost('/workspaces', { name });
+        input.value = '';
+        await loadWorkspaces();
+        document.getElementById('workspaceSelect').value = created.id;
+      }
 
       function renderConnectionsPanel(conns) {
         const list = document.getElementById('connectionsListSettings');
@@ -183,6 +345,12 @@
       }
 
       async function load() {
+        const ctx = readContext();
+        const userEl = document.getElementById('contextUserId');
+        if (userEl) userEl.value = ctx.userId;
+        const roleEl = document.getElementById('contextUserRole');
+        if (roleEl) roleEl.value = ctx.userRole;
+        await loadWorkspaces();
         const prefs = await apiGet('/prefs');
         document.getElementById('brandVoice').value = prefs.brandVoice || '';
         document.getElementById('defaultHashtags').value = (prefs.defaultHashtags || []).join(' ');
@@ -191,6 +359,7 @@
         renderConnectionsPanel(conns);
         
         initThemeToggle();
+        await loadMembers();
       }
 
       window.addEventListener('connections:refresh', async () => {
@@ -204,6 +373,40 @@
           defaultHashtags: document.getElementById('defaultHashtags').value.split(/\s+/).filter(Boolean)
         });
         alert('Saved');
+      });
+
+      document.getElementById('saveContextBtn').addEventListener('click', async () => {
+        const userId = (document.getElementById('contextUserId').value || '').trim() || 'demo';
+        const orgId = (document.getElementById('workspaceSelect').value || '').trim();
+        const userRole = (document.getElementById('contextUserRole').value || 'editor').trim();
+        writeContext({ userId, orgId, userRole });
+        renderContextStatus();
+        await load();
+      });
+
+      document.getElementById('createWorkspaceBtn').addEventListener('click', async () => {
+        try {
+          await createWorkspace();
+        } catch (e) {
+          alert('Failed to create workspace: ' + e.message);
+        }
+      });
+
+      document.getElementById('refreshWorkspacesBtn').addEventListener('click', async () => {
+        try {
+          await loadWorkspaces();
+          await loadMembers();
+        } catch (e) {
+          alert('Failed to refresh workspaces: ' + e.message);
+        }
+      });
+
+      document.getElementById('addMemberBtn').addEventListener('click', async () => {
+        try {
+          await upsertMember();
+        } catch (e) {
+          alert('Failed to upsert member: ' + e.message);
+        }
       });
 
       load();
@@ -224,6 +427,7 @@
       <div class="nav-group">
         <a href="./calendar.html" class="nav-item" aria-label="Calendar"><i class="fa-solid fa-calendar-days"></i></a>
         <a href="./build.html" class="nav-item" aria-label="Build Post"><i class="fa-solid fa-plus-circle"></i></a>
+        <a href="./review.html" class="nav-item" aria-label="Review Queue"><i class="fa-regular fa-eye"></i></a>
         <a href="./analytics.html" class="nav-item" aria-label="Analytics"><i class="fa-solid fa-chart-line"></i></a>
         <a href="./storage.html" class="nav-item" aria-label="Storage"><i class="fa-solid fa-cloud"></i></a>
         <a href="./settings.html" class="nav-item active" aria-label="Settings"><i class="fa-solid fa-gear"></i></a>

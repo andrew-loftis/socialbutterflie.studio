@@ -1,4 +1,4 @@
-import { listCampaigns, createCampaign, updateCampaign, deleteCampaign, getContextDefaults } from '../../shared/storage.js';
+import { listCampaigns, createCampaign, updateCampaign, deleteCampaign, resolveContextFromEvent } from '../../shared/storage.js';
 
 function response(body, statusCode = 200) {
   return {
@@ -10,7 +10,7 @@ function response(body, statusCode = 200) {
 
 export async function handler(event) {
   try {
-    const defaults = getContextDefaults();
+    const defaults = resolveContextFromEvent(event);
     if (event.httpMethod === 'GET') {
       const campaigns = await listCampaigns({ org_id: defaults.org_id });
       return response(campaigns);
